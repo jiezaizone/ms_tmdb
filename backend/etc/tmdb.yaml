@@ -1,0 +1,20 @@
+Name: ms-tmdb-api
+Host: 0.0.0.0
+Port: 8888
+
+# PostgreSQL 配置
+Postgres:
+  DataSource: "host=192.168.50.10 port=5432 user=postgres password=postgres dbname=ms_tmdb sslmode=disable"
+
+# TMDB 配置
+Tmdb:
+  ApiKey: "54b2972675bc4cfb90a55b5612428189"
+  BaseURL: "https://api.themoviedb.org/3"
+  DefaultLanguage: "zh-CN"
+  RateLimit: 40
+
+# 缓存配置
+Cache:
+  MovieTTL: 24
+  TVTTL: 24
+  PersonTTL: 48
