@@ -49,9 +49,10 @@ func (l *CompareTvRemoteLogic) CompareTvRemote(req *types.AdminSyncReq) (resp *t
 	if err := l.svcCtx.DB.Where("tmdb_id = ?", req.Id).First(&tv).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &types.AdminCompareResp{
-				HasDiff:    true,
-				DiffFields: []string{"local_record_missing"},
-				Message:    "本地不存在该剧集数据，建议覆盖拉取",
+				HasDiff:                 true,
+				DiffFields:              []string{"local_record_missing"},
+				LocalOverrideDiffFields: []string{},
+				Message:                 "本地不存在该剧集数据，建议覆盖拉取",
 			}, nil
 		}
 		return nil, err
@@ -65,12 +66,15 @@ func (l *CompareTvRemoteLogic) CompareTvRemote(req *types.AdminSyncReq) (resp *t
 	if err != nil {
 		return nil, err
 	}
-	diffFields := diffTopLevelFields(localData, remoteData)
-	diffFields = filterDiffFieldsByLocalPatch(diffFields, localPatch)
+	allDiffFields := diffTopLevelFields(localData, remoteData)
+	diffFields, localOverrideDiffFields := splitDiffFieldsByLocalPatch(allDiffFields, localPatch, remoteData)
 	diffFields = filterIgnoredRemoteDiffFields(diffFields)
+	localOverrideDiffFields = filterIgnoredRemoteDiffFields(localOverrideDiffFields)
+	hasDiff := len(diffFields) > 0 || len(localOverrideDiffFields) > 0
 	return &types.AdminCompareResp{
-		HasDiff:    len(diffFields) > 0,
-		DiffFields: diffFields,
-		Message:    fmt.Sprintf("检测到 %d 项远程差异", len(diffFields)),
+		HasDiff:                 hasDiff,
+		DiffFields:              diffFields,
+		LocalOverrideDiffFields: localOverrideDiffFields,
+		Message:                 fmt.Sprintf("检测到远程差异 %d 项，本地修改字段 %d 项", len(diffFields), len(localOverrideDiffFields)),
 	}, nil
 }

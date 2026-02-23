@@ -114,9 +114,10 @@ type (
 	}
 	// 管理接口 - 远程差异检测响应
 	AdminCompareResp {
-		HasDiff    bool     `json:"has_diff"`
-		DiffFields []string `json:"diff_fields"`
-		Message    string   `json:"message"`
+		HasDiff                 bool     `json:"has_diff"`
+		DiffFields              []string `json:"diff_fields"`
+		LocalOverrideDiffFields []string `json:"local_override_diff_fields"`
+		Message                 string   `json:"message"`
 	}
 	// 类型列表请求
 	GenreListReq {
@@ -480,4 +481,3 @@ service tmdb-api {
 	@handler ComparePersonRemote
 	get /compare/person/:id (AdminSyncReq) returns (AdminCompareResp)
 }
-

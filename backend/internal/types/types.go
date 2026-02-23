@@ -4,9 +4,10 @@
 package types
 
 type AdminCompareResp struct {
-	HasDiff    bool     `json:"has_diff"`
-	DiffFields []string `json:"diff_fields"`
-	Message    string   `json:"message"`
+	HasDiff                 bool     `json:"has_diff"`
+	DiffFields              []string `json:"diff_fields"`
+	LocalOverrideDiffFields []string `json:"local_override_diff_fields"`
+	Message                 string   `json:"message"`
 }
 
 type AdminProxyReq struct {

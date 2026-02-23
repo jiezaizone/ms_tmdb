@@ -264,6 +264,68 @@ func filterDiffFieldsByLocalPatch(diffFields []string, localPatch map[string]int
 	return filtered
 }
 
+func splitDiffFieldsByLocalPatch(diffFields []string, localPatch map[string]interface{}, remote map[string]interface{}) ([]string, []string) {
+	if len(diffFields) == 0 {
+		return []string{}, []string{}
+	}
+
+	remoteDiff := make([]string, 0, len(diffFields))
+	localOverrideDiff := make([]string, 0)
+	for _, field := range diffFields {
+		patchValue, ok := localPatch[field]
+		if !ok {
+			remoteDiff = append(remoteDiff, field)
+			continue
+		}
+
+		if shouldIgnoreLocalOverrideDiff(field, patchValue, remote[field]) {
+			continue
+		}
+		localOverrideDiff = append(localOverrideDiff, field)
+	}
+	return remoteDiff, localOverrideDiff
+}
+
+func shouldIgnoreLocalOverrideDiff(field string, patchValue interface{}, remoteValue interface{}) bool {
+	switch field {
+	case "genres":
+		return equalGenresByName(patchValue, remoteValue)
+	default:
+		return false
+	}
+}
+
+func equalGenresByName(patchValue interface{}, remoteValue interface{}) bool {
+	return reflect.DeepEqual(normalizeGenreNames(patchValue), normalizeGenreNames(remoteValue))
+}
+
+func normalizeGenreNames(raw interface{}) []string {
+	items, ok := raw.([]interface{})
+	if !ok {
+		return []string{}
+	}
+
+	set := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		entry, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name := strings.ToLower(strings.TrimSpace(mapString(entry, "name")))
+		if name == "" {
+			continue
+		}
+		set[name] = struct{}{}
+	}
+
+	result := make([]string, 0, len(set))
+	for name := range set {
+		result = append(result, name)
+	}
+	sort.Strings(result)
+	return result
+}
+
 func filterIgnoredRemoteDiffFields(diffFields []string) []string {
 	if len(diffFields) == 0 {
 		return diffFields

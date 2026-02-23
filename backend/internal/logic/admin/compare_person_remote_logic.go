@@ -49,9 +49,10 @@ func (l *ComparePersonRemoteLogic) ComparePersonRemote(req *types.AdminSyncReq) 
 	if err := l.svcCtx.DB.Where("tmdb_id = ?", req.Id).First(&person).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return &types.AdminCompareResp{
-				HasDiff:    true,
-				DiffFields: []string{"local_record_missing"},
-				Message:    "本地不存在该人物数据，建议覆盖拉取",
+				HasDiff:                 true,
+				DiffFields:              []string{"local_record_missing"},
+				LocalOverrideDiffFields: []string{},
+				Message:                 "本地不存在该人物数据，建议覆盖拉取",
 			}, nil
 		}
 		return nil, err
@@ -63,8 +64,9 @@ func (l *ComparePersonRemoteLogic) ComparePersonRemote(req *types.AdminSyncReq) 
 	}
 	diffFields := diffTopLevelFields(localData, remoteData)
 	return &types.AdminCompareResp{
-		HasDiff:    len(diffFields) > 0,
-		DiffFields: diffFields,
-		Message:    fmt.Sprintf("检测到 %d 项远程差异", len(diffFields)),
+		HasDiff:                 len(diffFields) > 0,
+		DiffFields:              diffFields,
+		LocalOverrideDiffFields: []string{},
+		Message:                 fmt.Sprintf("检测到 %d 项远程差异", len(diffFields)),
 	}, nil
 }

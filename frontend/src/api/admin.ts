@@ -28,6 +28,7 @@ export type AdminProxyPayload = {
 export type AdminCompareResp = {
   has_diff: boolean;
   diff_fields: string[];
+  local_override_diff_fields: string[];
   message: string;
 };
 

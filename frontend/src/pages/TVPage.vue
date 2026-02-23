@@ -32,8 +32,10 @@ type TVEditForm = {
 };
 
 type RemoteDiffNotice = {
-  summary: string;
-  fields: string[];
+  remoteSummary: string;
+  localOverrideSummary: string;
+  remoteFields: string[];
+  localOverrideFields: string[];
 };
 
 type RemoteDiffDecision = "unknown" | "has_diff_pending" | "keep_local" | "overwritten" | "no_diff";
@@ -82,18 +84,32 @@ const editForm = ref<TVEditForm>({
 });
 
 const tvId = computed(() => Number(route.params.id));
+const hasRemoteOnlyDiff = computed(() => (remoteDiffNotice.value?.remoteFields.length ?? 0) > 0);
+const hasLocalOverrideDiff = computed(() => (remoteDiffNotice.value?.localOverrideFields.length ?? 0) > 0);
 const shouldShowSyncPanel = computed(() => {
-  return remoteDiffDecision.value === "has_diff_pending" || remoteDiffDecision.value === "keep_local";
+  return remoteDiffDecision.value === "has_diff_pending";
 });
 const allowedSyncModes = computed<AdminSyncMode[]>(() => {
   if (remoteDiffDecision.value === "no_diff") {
     return ["update_unmodified"];
   }
   if (remoteDiffDecision.value === "has_diff_pending") {
+    if (hasRemoteOnlyDiff.value && hasLocalOverrideDiff.value) {
+      return ["update_unmodified", "overwrite_all", "selective"];
+    }
+    if (hasRemoteOnlyDiff.value) {
+      return ["update_unmodified", "overwrite_all"];
+    }
     return ["overwrite_all", "selective"];
   }
   if (remoteDiffDecision.value === "keep_local") {
-    return ["update_unmodified", "selective"];
+    if (hasRemoteOnlyDiff.value && hasLocalOverrideDiff.value) {
+      return ["update_unmodified", "overwrite_all", "selective"];
+    }
+    if (hasRemoteOnlyDiff.value) {
+      return ["update_unmodified", "overwrite_all"];
+    }
+    return ["overwrite_all", "selective"];
   }
   return ["update_unmodified", "overwrite_all", "selective"];
 });
@@ -187,8 +203,9 @@ async function checkRemoteDiffAndPrompt() {
   remoteDiffError.value = "";
   try {
     const resp = await compareTVRemote(tvId.value);
-    const diffFields = Array.isArray(resp.data?.diff_fields) ? resp.data.diff_fields : [];
-    const hasDiff = Boolean(resp.data?.has_diff) && diffFields.length > 0;
+    const remoteFields = Array.isArray(resp.data?.diff_fields) ? resp.data.diff_fields : [];
+    const localOverrideFields = Array.isArray(resp.data?.local_override_diff_fields) ? resp.data.local_override_diff_fields : [];
+    const hasDiff = Boolean(resp.data?.has_diff) && (remoteFields.length > 0 || localOverrideFields.length > 0);
     if (!hasDiff) {
       remoteDiffNotice.value = null;
       remoteDiffDecision.value = "no_diff";
@@ -197,11 +214,23 @@ async function checkRemoteDiffAndPrompt() {
       return;
     }
 
-    const fieldPreview = diffFields.slice(0, 6).join("、");
-    const summary = diffFields.length > 6 ? `${fieldPreview} 等 ${diffFields.length} 项` : `${fieldPreview}（共 ${diffFields.length} 项）`;
+    const remoteFieldPreview = remoteFields.slice(0, 6).join("、");
+    const remoteSummary = remoteFields.length === 0
+      ? "无"
+      : remoteFields.length > 6
+        ? `${remoteFieldPreview} 等 ${remoteFields.length} 项`
+        : `${remoteFieldPreview}（共 ${remoteFields.length} 项）`;
+    const localOverridePreview = localOverrideFields.slice(0, 6).join("、");
+    const localOverrideSummary = localOverrideFields.length === 0
+      ? "无"
+      : localOverrideFields.length > 6
+        ? `${localOverridePreview} 等 ${localOverrideFields.length} 项`
+        : `${localOverridePreview}（共 ${localOverrideFields.length} 项）`;
     remoteDiffNotice.value = {
-      summary,
-      fields: diffFields,
+      remoteSummary,
+      localOverrideSummary,
+      remoteFields,
+      localOverrideFields,
     };
     remoteDiffMessage.value = "";
     remoteDiffDecision.value = "has_diff_pending";
@@ -214,9 +243,10 @@ async function checkRemoteDiffAndPrompt() {
 }
 
 function keepLocalData() {
+  remoteDiffNotice.value = null;
   remoteDiffDecision.value = "keep_local";
   remoteDiffError.value = "";
-  remoteDiffMessage.value = "已保留本地数据，可在当前提示里选择同步模式";
+  remoteDiffMessage.value = "已保留本地数据，已跳过本次远程差异处理";
 }
 
 function handleSynced() {
@@ -417,7 +447,10 @@ watch(tvId, () => {
                 检测到远程剧集数据与本地不一致
               </p>
               <p class="mt-1 text-xs text-amber-700">
-                变化字段：{{ remoteDiffNotice.summary }}
+                远程变化字段：{{ remoteDiffNotice.remoteSummary }}
+              </p>
+              <p class="mt-1 text-xs text-amber-700">
+                本地修改字段：{{ remoteDiffNotice.localOverrideSummary }}
               </p>
               <div class="mt-2 flex flex-wrap items-center gap-2">
                 <button
@@ -434,7 +467,7 @@ watch(tvId, () => {
               media-type="tv"
               :target-id="tvId"
               :allowed-modes="allowedSyncModes"
-              :preset-changed-fields="remoteDiffNotice?.fields ?? []"
+              :preset-changed-fields="remoteDiffNotice?.localOverrideFields ?? []"
               :embedded="true"
               @synced="handleSynced"
             />
