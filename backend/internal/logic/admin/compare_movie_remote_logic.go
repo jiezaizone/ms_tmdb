@@ -61,7 +61,13 @@ func (l *CompareMovieRemoteLogic) CompareMovieRemote(req *types.AdminSyncReq) (r
 	if err != nil {
 		return nil, err
 	}
+	localPatch, err := rawJSONToMap(movie.LocalData)
+	if err != nil {
+		return nil, err
+	}
 	diffFields := diffTopLevelFields(localData, remoteData)
+	diffFields = filterDiffFieldsByLocalPatch(diffFields, localPatch)
+	diffFields = filterIgnoredRemoteDiffFields(diffFields)
 	return &types.AdminCompareResp{
 		HasDiff:    len(diffFields) > 0,
 		DiffFields: diffFields,

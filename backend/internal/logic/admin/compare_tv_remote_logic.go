@@ -61,7 +61,13 @@ func (l *CompareTvRemoteLogic) CompareTvRemote(req *types.AdminSyncReq) (resp *t
 	if err != nil {
 		return nil, err
 	}
+	localPatch, err := rawJSONToMap(tv.LocalData)
+	if err != nil {
+		return nil, err
+	}
 	diffFields := diffTopLevelFields(localData, remoteData)
+	diffFields = filterDiffFieldsByLocalPatch(diffFields, localPatch)
+	diffFields = filterIgnoredRemoteDiffFields(diffFields)
 	return &types.AdminCompareResp{
 		HasDiff:    len(diffFields) > 0,
 		DiffFields: diffFields,

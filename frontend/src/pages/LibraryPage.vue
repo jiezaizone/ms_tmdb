@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { listMovies, listTV } from "@/api/admin";
 import { tmdbImg } from "@/api/tmdb";
 
@@ -7,7 +8,8 @@ type MediaTab = "movie" | "tv";
 type ViewMode = "grid" | "table";
 type SearchMode = "contains" | "prefix";
 
-const activeTab = ref<MediaTab>("movie");
+const route = useRoute();
+const activeTab = ref<MediaTab>(route.query.tab === "tv" ? "tv" : "movie");
 const viewMode = ref<ViewMode>("grid");
 const searchMode = ref<SearchMode>("contains");
 const keywordInput = ref("");
@@ -62,6 +64,17 @@ function routeByItem(item: any) {
   if (activeTab.value === "movie") return `/movie/${item.tmdb_id}`;
   return `/tv/${item.tmdb_id}`;
 }
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const nextTab: MediaTab = tab === "tv" ? "tv" : "movie";
+    if (nextTab !== activeTab.value) {
+      activeTab.value = nextTab;
+      page.value = 1;
+    }
+  },
+);
 
 watch([activeTab, page, keyword, searchMode], loadData);
 onMounted(loadData);

@@ -249,6 +249,43 @@ func diffTopLevelFields(local map[string]interface{}, remote map[string]interfac
 	return diff
 }
 
+func filterDiffFieldsByLocalPatch(diffFields []string, localPatch map[string]interface{}) []string {
+	if len(diffFields) == 0 || len(localPatch) == 0 {
+		return diffFields
+	}
+
+	filtered := make([]string, 0, len(diffFields))
+	for _, field := range diffFields {
+		if _, ok := localPatch[field]; ok {
+			continue
+		}
+		filtered = append(filtered, field)
+	}
+	return filtered
+}
+
+func filterIgnoredRemoteDiffFields(diffFields []string) []string {
+	if len(diffFields) == 0 {
+		return diffFields
+	}
+
+	ignored := map[string]struct{}{
+		"images":          {},
+		"videos":          {},
+		"recommendations": {},
+		"similar":         {},
+	}
+
+	filtered := make([]string, 0, len(diffFields))
+	for _, field := range diffFields {
+		if _, ok := ignored[field]; ok {
+			continue
+		}
+		filtered = append(filtered, field)
+	}
+	return filtered
+}
+
 func mapString(data map[string]interface{}, key string) string {
 	value, ok := data[key]
 	if !ok || value == nil {

@@ -7,6 +7,8 @@ const props = defineProps<{
   mediaType: "movie" | "tv" | "person";
   targetId: number;
   allowedModes?: AdminSyncMode[];
+  embedded?: boolean;
+  presetChangedFields?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -28,6 +30,9 @@ const modeOptions: Array<{ label: string; value: AdminSyncMode; hint: string }> 
 ];
 
 const canSync = computed(() => Number.isFinite(props.targetId) && props.targetId > 0);
+const usingPresetChangedFields = computed(() => {
+  return Array.isArray(props.presetChangedFields) && props.presetChangedFields.length > 0;
+});
 const visibleModeOptions = computed(() => {
   const allowed = props.allowedModes;
   if (!Array.isArray(allowed) || allowed.length === 0) {
@@ -35,6 +40,33 @@ const visibleModeOptions = computed(() => {
   }
   return modeOptions.filter((option) => allowed.includes(option.value));
 });
+const panelClass = computed(() => {
+  if (props.embedded) {
+    return "mt-3 rounded-lg border border-amber-200 bg-white/85 p-3";
+  }
+  return "mt-6 rounded-xl border border-black/10 bg-white/70 p-4";
+});
+
+function normalizePresetChangedFields(): string[] {
+  if (!Array.isArray(props.presetChangedFields)) {
+    return [];
+  }
+  const unique = new Set<string>();
+  props.presetChangedFields.forEach((field) => {
+    const name = String(field ?? "").trim();
+    if (!name) {
+      return;
+    }
+    unique.add(name);
+  });
+  return [...unique];
+}
+
+function applyPresetChangedFields() {
+  const fields = normalizePresetChangedFields();
+  changedFields.value = fields;
+  selectedOverwriteFields.value = [...fields];
+}
 
 function resolveFieldLabel(field: string) {
   const map: Record<string, string> = {
@@ -78,6 +110,11 @@ async function executeSync(payload: AdminSyncPayload) {
 }
 
 async function loadChangedFields() {
+  if (usingPresetChangedFields.value) {
+    applyPresetChangedFields();
+    syncMessage.value = `检测到 ${changedFields.value.length} 个有变化字段`;
+    return;
+  }
   if (!canSync.value || diffChecking.value) return;
   diffChecking.value = true;
   syncError.value = "";
@@ -100,7 +137,7 @@ async function applySync() {
   syncError.value = "";
   syncMessage.value = "";
   try {
-    if (syncMode.value === "selective" && changedFields.value.length === 0) {
+    if (syncMode.value === "selective" && changedFields.value.length === 0 && !usingPresetChangedFields.value) {
       await loadChangedFields();
     }
 
@@ -126,8 +163,22 @@ watch(syncMode, (mode) => {
   if (mode !== "selective") {
     changedFields.value = [];
     selectedOverwriteFields.value = [];
+    return;
+  }
+  if (usingPresetChangedFields.value) {
+    applyPresetChangedFields();
   }
 });
+
+watch(
+  () => props.presetChangedFields,
+  () => {
+    if (syncMode.value === "selective" && usingPresetChangedFields.value) {
+      applyPresetChangedFields();
+    }
+  },
+  { immediate: true, deep: true },
+);
 
 watch(
   visibleModeOptions,
@@ -141,9 +192,9 @@ watch(
 </script>
 
 <template>
-  <div class="mt-6 rounded-xl border border-black/10 bg-white/70 p-4">
-    <h3 class="text-sm font-semibold">数据库同步</h3>
-    <p class="mt-1 text-xs text-black/60">
+  <div :class="panelClass">
+    <h3 v-if="!props.embedded" class="text-sm font-semibold">数据库同步</h3>
+    <p class="text-xs text-black/60" :class="{ 'mt-1': !props.embedded }">
       直接在详情页执行数据重拉取，不再需要进入管理页。
     </p>
 
@@ -164,6 +215,7 @@ watch(
     <div v-if="syncMode === 'selective'" class="mt-3 rounded-lg border border-black/10 bg-white p-3">
       <div class="flex items-center gap-2">
         <button
+          v-if="!usingPresetChangedFields"
           class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-sand/50 disabled:opacity-60"
           :disabled="diffChecking || syncing || !canSync"
           @click="loadChangedFields"
@@ -172,6 +224,9 @@ watch(
         </button>
         <span class="text-xs text-black/60">共 {{ changedFields.length }} 项</span>
       </div>
+      <p v-if="usingPresetChangedFields" class="mt-2 text-xs text-black/55">
+        已使用上方远程差异字段列表，可直接选择覆盖项。
+      </p>
 
       <div class="mt-2 flex flex-wrap gap-2">
         <label

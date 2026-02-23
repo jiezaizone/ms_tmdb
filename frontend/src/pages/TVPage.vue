@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
-import { compareTVRemote, syncTV, updateTV } from "@/api/admin";
+import { useRoute, useRouter } from "vue-router";
+import { compareTVRemote, updateTV } from "@/api/admin";
 import type { AdminSyncMode } from "@/api/admin";
 import DetailSyncPanel from "@/components/DetailSyncPanel.vue";
 import { getTVDetail, getTVGenreList } from "@/api/tv";
@@ -39,6 +39,7 @@ type RemoteDiffNotice = {
 type RemoteDiffDecision = "unknown" | "has_diff_pending" | "keep_local" | "overwritten" | "no_diff";
 
 const route = useRoute();
+const router = useRouter();
 const loading = ref(false);
 const error = ref("");
 const detail = ref<any>(null);
@@ -49,7 +50,6 @@ const saveMessage = ref("");
 const comparedRemoteId = ref<number | null>(null);
 const checkingRemoteDiff = ref(false);
 const remoteDiffNotice = ref<RemoteDiffNotice | null>(null);
-const resolvingRemoteDiff = ref(false);
 const remoteDiffMessage = ref("");
 const remoteDiffError = ref("");
 const remoteDiffDecision = ref<RemoteDiffDecision>("unknown");
@@ -97,6 +97,23 @@ const allowedSyncModes = computed<AdminSyncMode[]>(() => {
   }
   return ["update_unmodified", "overwrite_all", "selective"];
 });
+
+function goBack() {
+  void router.push({
+    path: "/library",
+    query: { tab: "tv" },
+  });
+}
+
+function personLink(personId: number) {
+  return {
+    path: `/person/${personId}`,
+    query: {
+      fromType: "tv",
+      fromId: String(tvId.value),
+    },
+  };
+}
 
 function resetEditForm(data: any) {
   editForm.value = {
@@ -166,14 +183,17 @@ async function checkRemoteDiffAndPrompt() {
   if (!tvId.value || checkingRemoteDiff.value || comparedRemoteId.value === tvId.value) {
     return;
   }
-  comparedRemoteId.value = tvId.value;
   checkingRemoteDiff.value = true;
+  remoteDiffError.value = "";
   try {
     const resp = await compareTVRemote(tvId.value);
     const diffFields = Array.isArray(resp.data?.diff_fields) ? resp.data.diff_fields : [];
-    if (!resp.data?.has_diff) {
+    const hasDiff = Boolean(resp.data?.has_diff) && diffFields.length > 0;
+    if (!hasDiff) {
       remoteDiffNotice.value = null;
       remoteDiffDecision.value = "no_diff";
+      remoteDiffMessage.value = "";
+      comparedRemoteId.value = tvId.value;
       return;
     }
 
@@ -183,7 +203,9 @@ async function checkRemoteDiffAndPrompt() {
       summary,
       fields: diffFields,
     };
+    remoteDiffMessage.value = "";
     remoteDiffDecision.value = "has_diff_pending";
+    comparedRemoteId.value = tvId.value;
   } catch (err: any) {
     remoteDiffError.value = err.message ?? "远程差异检测失败";
   } finally {
@@ -191,32 +213,15 @@ async function checkRemoteDiffAndPrompt() {
   }
 }
 
-async function overwriteWithRemoteData() {
-  if (!tvId.value || resolvingRemoteDiff.value) {
-    return;
-  }
-
-  resolvingRemoteDiff.value = true;
-  remoteDiffError.value = "";
-  remoteDiffMessage.value = "";
-  try {
-    await syncTV(tvId.value, { mode: "overwrite_all" });
-    remoteDiffNotice.value = null;
-    remoteDiffDecision.value = "overwritten";
-    remoteDiffMessage.value = "已覆盖并拉取最新远程数据";
-    await loadData({ checkRemoteDiff: false });
-  } catch (err: any) {
-    remoteDiffError.value = err.message ?? "覆盖拉取失败";
-  } finally {
-    resolvingRemoteDiff.value = false;
-  }
-}
-
 function keepLocalData() {
-  remoteDiffNotice.value = null;
   remoteDiffDecision.value = "keep_local";
   remoteDiffError.value = "";
-  remoteDiffMessage.value = "已保留本地数据，可在“数据库同步”区域手动更新";
+  remoteDiffMessage.value = "已保留本地数据，可在当前提示里选择同步模式";
+}
+
+function handleSynced() {
+  comparedRemoteId.value = null;
+  void loadData();
 }
 
 async function loadData(options: { checkRemoteDiff?: boolean } = {}) {
@@ -321,6 +326,7 @@ async function saveTVChanges() {
     await updateTV(tvId.value, payload);
     saveMessage.value = "已保存到本地数据库";
     isEditing.value = false;
+    comparedRemoteId.value = null;
     await loadData();
   } catch (err: any) {
     saveError.value = err.message ?? "保存失败";
@@ -345,6 +351,14 @@ watch(tvId, () => {
       class="hero-banner"
       :style="{ backgroundImage: `url(${tmdbImg(detail.backdrop_path, 'w780')})` }"
     >
+      <div class="absolute left-4 top-4 z-10">
+        <button
+          class="rounded-lg border border-white/40 bg-black/40 px-3 py-1.5 text-xs text-white backdrop-blur hover:bg-black/55"
+          @click="goBack"
+        >
+          返回上一页
+        </button>
+      </div>
       <div class="hero-overlay">
         <h1 class="text-2xl font-bold text-white md:text-3xl">{{ detail.name || detail.original_name }}</h1>
         <p class="mt-1 text-sm text-white/70">{{ detail.tagline }}</p>
@@ -405,39 +419,33 @@ watch(tvId, () => {
               <p class="mt-1 text-xs text-amber-700">
                 变化字段：{{ remoteDiffNotice.summary }}
               </p>
-              <div class="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  class="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-60"
-                  :disabled="resolvingRemoteDiff"
-                  @click="overwriteWithRemoteData"
-                >
-                  {{ resolvingRemoteDiff ? "更新中..." : "覆盖拉取最新数据" }}
-                </button>
+              <div class="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   class="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs text-amber-700 hover:bg-amber-100 disabled:opacity-60"
-                  :disabled="resolvingRemoteDiff"
                   @click="keepLocalData"
                 >
-                  保留本地数据
+                  暂不处理，保留本地
                 </button>
               </div>
             </template>
 
-            <p v-else-if="remoteDiffMessage" class="text-xs text-green-700">
+            <DetailSyncPanel
+              v-if="shouldShowSyncPanel"
+              media-type="tv"
+              :target-id="tvId"
+              :allowed-modes="allowedSyncModes"
+              :preset-changed-fields="remoteDiffNotice?.fields ?? []"
+              :embedded="true"
+              @synced="handleSynced"
+            />
+
+            <p v-if="!checkingRemoteDiff && !remoteDiffNotice && remoteDiffMessage" class="text-xs text-green-700">
               {{ remoteDiffMessage }}
             </p>
             <p v-if="remoteDiffError" class="mt-1 text-xs text-red-600">
               {{ remoteDiffError }}
             </p>
           </div>
-
-          <DetailSyncPanel
-            v-if="shouldShowSyncPanel"
-            media-type="tv"
-            :target-id="tvId"
-            :allowed-modes="allowedSyncModes"
-            @synced="loadData"
-          />
 
           <div class="mt-6 rounded-xl border border-black/10 bg-white/70 p-4">
             <div class="flex items-center justify-between gap-3">
@@ -646,7 +654,7 @@ watch(tvId, () => {
             <h3 class="mb-2 text-sm font-semibold">主要演员</h3>
             <div class="cast-grid">
               <div v-for="c in detail.credits.cast.slice(0, 8)" :key="c.id" class="cast-card">
-                <RouterLink :to="`/person/${c.id}`">
+                <RouterLink :to="personLink(c.id)">
                   <img
                     :src="tmdbImg(c.profile_path, 'w185')"
                     :alt="c.name"

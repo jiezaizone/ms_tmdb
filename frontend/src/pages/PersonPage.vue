@@ -1,15 +1,39 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { getPersonDetail } from "@/api/person";
 import { profileImg, tmdbImg } from "@/api/tmdb";
 
 const route = useRoute();
+const router = useRouter();
 const loading = ref(false);
 const error = ref("");
 const detail = ref<any>(null);
 
 const personId = computed(() => Number(route.params.id));
+const sourceType = computed(() => {
+  const value = String(route.query.fromType ?? "").trim().toLowerCase();
+  if (value === "movie" || value === "tv") {
+    return value;
+  }
+  return "";
+});
+const sourceId = computed(() => {
+  const value = Number(route.query.fromId);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+});
+
+function goBack() {
+  if (sourceType.value && sourceId.value > 0) {
+    void router.push(`/${sourceType.value}/${sourceId.value}`);
+    return;
+  }
+  if (window.history.length > 1) {
+    router.back();
+    return;
+  }
+  void router.push("/");
+}
 
 async function loadData() {
   if (!personId.value) {
@@ -46,6 +70,14 @@ watch(personId, () => {
 
   <template v-else-if="detail">
     <section class="card">
+      <div class="mb-4">
+        <button
+          class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs text-black/70 hover:bg-sand/50"
+          @click="goBack"
+        >
+          返回上一页
+        </button>
+      </div>
       <div class="detail-layout">
         <!-- 头像 -->
         <div class="detail-poster">
