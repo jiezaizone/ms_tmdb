@@ -2,18 +2,18 @@ Name: ms-tmdb-api
 Host: 0.0.0.0
 Port: 8888
 
-# PostgreSQL 配置
+# PostgreSQL 配置（请改成你的外部数据库地址）
 Postgres:
-  Host: "192.168.50.10"
+  Host: "host.docker.internal"
   Port: 5432
   User: "postgres"
   Password: "postgres"
   DBName: "ms_tmdb"
   SSLMode: "disable"
 
-# TMDB 配置
+# TMDB 配置（上线前请替换为你自己的密钥）
 Tmdb:
-  ApiKey: "54b2972675bc4cfb90a55b5612428189"
+  ApiKey: ""
   BaseURL: "https://api.themoviedb.org/3"
   DefaultLanguage: "zh-CN"
   RateLimit: 40

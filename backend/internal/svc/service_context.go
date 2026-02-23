@@ -20,7 +20,7 @@ type ServiceContext struct {
 
 func NewServiceContext(c config.Config) *ServiceContext {
 	// 初始化 PostgreSQL 连接
-	db, err := gorm.Open(postgres.Open(c.Postgres.DataSource), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(c.Postgres.DSN()), &gorm.Config{})
 	if err != nil {
 		logx.Must(err)
 	}

@@ -1,15 +1,18 @@
 package config
 
-import "github.com/zeromicro/go-zero/rest"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/zeromicro/go-zero/rest"
+)
 
 // Config 服务配置
 type Config struct {
 	rest.RestConf
 
 	// PostgreSQL 配置
-	Postgres struct {
-		DataSource string
-	}
+	Postgres PostgresConf
 
 	// TMDB 配置
 	Tmdb struct {
@@ -25,4 +28,58 @@ type Config struct {
 		TVTTL     int // 电视剧缓存时长(小时)
 		PersonTTL int // 人物缓存时长(小时)
 	}
+}
+
+// PostgresConf PostgreSQL 连接配置
+type PostgresConf struct {
+	// DataSource 兼容旧配置；有值时优先使用
+	DataSource string
+	Host       string
+	Port       int
+	User       string
+	Password   string
+	DBName     string
+	SSLMode    string
+	TimeZone   string
+}
+
+// DSN 构建 GORM 使用的 PostgreSQL 连接串
+func (p PostgresConf) DSN() string {
+	if strings.TrimSpace(p.DataSource) != "" {
+		return p.DataSource
+	}
+
+	host := p.Host
+	if host == "" {
+		host = "127.0.0.1"
+	}
+
+	port := p.Port
+	if port == 0 {
+		port = 5432
+	}
+
+	user := p.User
+	if user == "" {
+		user = "postgres"
+	}
+
+	dbName := p.DBName
+	if dbName == "" {
+		dbName = "ms_tmdb"
+	}
+
+	sslMode := p.SSLMode
+	if sslMode == "" {
+		sslMode = "disable"
+	}
+
+	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=%s", host, port, user, dbName, sslMode)
+	if p.Password != "" {
+		dsn += fmt.Sprintf(" password=%s", p.Password)
+	}
+	if p.TimeZone != "" {
+		dsn += fmt.Sprintf(" TimeZone=%s", p.TimeZone)
+	}
+	return dsn
 }

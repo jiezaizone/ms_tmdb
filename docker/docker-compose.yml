@@ -1,28 +1,13 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: ms_tmdb_postgres
+  app:
+    image: ${MS_TMDB_IMAGE:-ghcr.io/your-org/ms_tmdb:latest}
+    container_name: ms_tmdb_app
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ms_tmdb
+      TMDB_CONFIG_FILE: /app/etc/tmdb.yaml
     ports:
-      - "5432:5432"
+      - "8080:80"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - ./tmdb.yaml:/app/etc/tmdb.yaml:ro
     restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    container_name: ms_tmdb_redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-
-volumes:
-  pg_data:
-  redis_data:

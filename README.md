@@ -23,17 +23,17 @@
 ms_tmdb/
 ├─ backend/      # go-zero 后端
 ├─ frontend/     # Vue 3 前端
-├─ docker/       # PostgreSQL / Redis 本地依赖
+├─ docker/       # 运行镜像与部署编排
 └─ docs/         # 方案、接口、迭代文档
 ```
 
 ## 快速开始
 
-### 1. 启动依赖
+### 1. 配置后端数据库与 TMDB
 
 ```bash
-cd docker
-docker compose up -d
+# 按需修改数据库地址、账号和 Tmdb.ApiKey
+backend/etc/tmdb.yaml
 ```
 
 ### 2. 启动后端
@@ -55,6 +55,16 @@ pnpm dev
 
 默认访问：`http://localhost:5173`
 
+### 4. （可选）使用 Docker 运行一体化镜像
+
+```bash
+cd docker
+# 先修改 tmdb.yaml 中的数据库连接和 Tmdb.ApiKey
+MS_TMDB_IMAGE=ghcr.io/<your-org>/<your-repo>:latest docker compose up -d
+```
+
+默认访问：`http://localhost:8080`
+
 ## 常用入口
 
 - 前端页面：
@@ -69,8 +79,9 @@ pnpm dev
 ## 配置说明
 
 - 后端配置文件：`backend/etc/tmdb.yaml`
+- Docker 运行配置：`docker/tmdb.yaml`
 - 关键配置项：
-  - `Postgres.DataSource`
+  - `Postgres.Host / Postgres.Port / Postgres.User / Postgres.Password / Postgres.DBName / Postgres.SSLMode`
   - `Tmdb.ApiKey`
   - `Tmdb.BaseURL`
   - `Tmdb.DefaultLanguage`
@@ -83,4 +94,3 @@ pnpm dev
 - `docs/api-reference.md`
 - `docs/frontend-plan.md`
 - `docs/implementation-schedule.md`
-
