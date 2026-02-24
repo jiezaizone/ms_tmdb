@@ -36,7 +36,9 @@ ms_tmdb/
 backend/etc/tmdb.yaml
 ```
 
-### 2. 启动后端
+### 2. 开发环境（命令运行）
+
+#### 启动后端
 
 ```bash
 cd backend
@@ -45,7 +47,7 @@ go run tmdb.go -f etc/tmdb.yaml
 
 默认监听：`http://localhost:8888`
 
-### 3. 启动前端
+#### 启动前端
 
 ```bash
 cd frontend
@@ -55,12 +57,14 @@ pnpm dev
 
 默认访问：`http://localhost:5173`
 
-### 4. （可选）使用 Docker 运行一体化镜像
+### 3. 生产环境（Docker Compose）
+
+将 `docker` 目录下的 `docker-compose.yml` 和 `tmdb.yaml` 复制到服务器同一目录（可直接复制文件内容创建）。
+
+先修改 `tmdb.yaml` 中的数据库连接与 `Tmdb.ApiKey`，再在该目录启动：
 
 ```bash
-cd docker
-# 先修改 tmdb.yaml 中的数据库连接和 Tmdb.ApiKey
-MS_TMDB_IMAGE=ghcr.io/<your-org>/<your-repo>:latest docker compose up -d
+docker compose up -d
 ```
 
 默认访问：`http://localhost:8080`
