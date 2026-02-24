@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import {
+  clearAutoSyncLogs,
+  getAutoSyncLogDetail,
   getAutoSyncLogs,
   getAutoSyncSettings,
   getProxySettings,
   runAutoSyncNow,
   updateAutoSyncSettings,
   updateProxySettings,
+  type AdminAutoSyncLogDetailResp,
   type AdminAutoSyncLogItem,
   type AdminAutoSyncMode,
 } from "@/api/admin";
@@ -31,12 +34,19 @@ const syncRunning = ref(false);
 const syncTriggering = ref(false);
 
 const logsLoading = ref(false);
+const logsClearing = ref(false);
+const clearLogsConfirmVisible = ref(false);
 const logsError = ref("");
+const logsMessage = ref("");
 const logsStatus = ref("");
 const logsPage = ref(1);
 const logsPageSize = ref(10);
 const logsTotal = ref(0);
 const logsItems = ref<AdminAutoSyncLogItem[]>([]);
+const detailModalVisible = ref(false);
+const detailLoading = ref(false);
+const detailError = ref("");
+const activeLogDetail = ref<AdminAutoSyncLogDetailResp | null>(null);
 
 const modeOptions: Array<{ label: string; value: AdminAutoSyncMode; hint: string }> = [
   { label: "仅更新未在本地修改的字段", value: "update_unmodified", hint: "保留本地改动，只更新 TMDB 远端变化字段" },
@@ -119,6 +129,46 @@ function formatDuration(durationMs: number) {
   return `${minutes}m ${remainSeconds}s`;
 }
 
+function summarizeMessage(message: string) {
+  const text = (message ?? "").trim();
+  if (!text) {
+    return "-";
+  }
+  if (text.length <= 26) {
+    return text;
+  }
+  return `${text.slice(0, 26)}...`;
+}
+
+function formatMediaType(mediaType: string) {
+  switch (mediaType) {
+    case "movie":
+      return "电影";
+    case "tv":
+      return "剧集";
+    case "person":
+      return "人物";
+    default:
+      return mediaType || "-";
+  }
+}
+
+function formatFieldList(fields: string[] | undefined) {
+  if (!Array.isArray(fields) || fields.length === 0) {
+    return "-";
+  }
+  return fields.join("、");
+}
+
+function formatFieldChanges(changes: Array<{ field: string; diff_type: string; before: string; after: string }> | undefined) {
+  if (!Array.isArray(changes) || changes.length === 0) {
+    return "-";
+  }
+  return changes
+    .map((item) => `${item.field} [${item.diff_type || "remote"}]\n前: ${item.before || "-"}\n后: ${item.after || "-"}`)
+    .join("\n\n");
+}
+
 function logsTotalPages() {
   return Math.max(1, Math.ceil(logsTotal.value / logsPageSize.value));
 }
@@ -149,6 +199,36 @@ async function refreshLogs() {
   await loadAutoSyncLogs(logsPage.value);
 }
 
+function openClearLogsConfirm() {
+  clearLogsConfirmVisible.value = true;
+}
+
+function closeClearLogsConfirm() {
+  if (logsClearing.value) {
+    return;
+  }
+  clearLogsConfirmVisible.value = false;
+}
+
+async function clearLogs() {
+  logsClearing.value = true;
+  logsError.value = "";
+  logsMessage.value = "";
+
+  try {
+    const resp = await clearAutoSyncLogs();
+    logsMessage.value = resp.data.message || "执行日志已清空";
+    closeLogDetail();
+    logsPage.value = 1;
+    await loadAutoSyncLogs(1);
+    clearLogsConfirmVisible.value = false;
+  } catch (err: any) {
+    logsError.value = err.message ?? "清空执行日志失败";
+  } finally {
+    logsClearing.value = false;
+  }
+}
+
 async function applyLogStatusFilter() {
   logsPage.value = 1;
   await loadAutoSyncLogs(1);
@@ -157,6 +237,29 @@ async function applyLogStatusFilter() {
 async function goToLogsPage(page: number) {
   const target = normalizeNumber(page, 1, logsTotalPages());
   await loadAutoSyncLogs(target);
+}
+
+async function openLogDetail(item: AdminAutoSyncLogItem) {
+  detailModalVisible.value = true;
+  detailLoading.value = true;
+  detailError.value = "";
+  activeLogDetail.value = null;
+
+  try {
+    const resp = await getAutoSyncLogDetail(item.id);
+    activeLogDetail.value = resp.data;
+  } catch (err: any) {
+    detailError.value = err.message ?? "读取日志明细失败";
+  } finally {
+    detailLoading.value = false;
+  }
+}
+
+function closeLogDetail() {
+  detailModalVisible.value = false;
+  detailLoading.value = false;
+  detailError.value = "";
+  activeLogDetail.value = null;
 }
 
 async function loadSettings() {
@@ -268,7 +371,7 @@ onMounted(reloadAll);
       <div v-else class="mt-3">
         <button
           class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
-          :disabled="proxySaving || syncSaving || syncTriggering || logsLoading"
+          :disabled="proxySaving || syncSaving || syncTriggering || logsLoading || logsClearing"
           @click="reloadAll"
         >
           重新读取全部设置
@@ -407,7 +510,7 @@ onMounted(reloadAll);
             <select
               v-model="logsStatus"
               class="ml-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
-              :disabled="logsLoading"
+              :disabled="logsLoading || logsClearing"
               @change="applyLogStatusFilter"
             >
               <option
@@ -422,14 +525,22 @@ onMounted(reloadAll);
 
           <button
             class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
-            :disabled="logsLoading"
+            :disabled="logsLoading || logsClearing"
             @click="refreshLogs"
           >
             {{ logsLoading ? "刷新中..." : "刷新日志" }}
           </button>
+          <button
+            class="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 hover:bg-red-100 disabled:opacity-60"
+            :disabled="logsLoading || logsClearing"
+            @click="openClearLogsConfirm"
+          >
+            {{ logsClearing ? "清空中..." : "清空日志" }}
+          </button>
         </div>
       </div>
 
+      <p v-if="logsMessage" class="mt-3 text-sm text-green-700">{{ logsMessage }}</p>
       <p v-if="logsError" class="mt-3 text-sm text-red-600">{{ logsError }}</p>
 
       <div class="mt-4 overflow-x-auto rounded-xl border border-black/10 bg-white">
@@ -441,7 +552,8 @@ onMounted(reloadAll);
               <th class="px-3 py-2 font-medium">状态</th>
               <th class="px-3 py-2 font-medium">检查/同步/失败</th>
               <th class="px-3 py-2 font-medium">耗时</th>
-              <th class="px-3 py-2 font-medium">信息</th>
+              <th class="px-3 py-2 font-medium">摘要</th>
+              <th class="px-3 py-2 font-medium">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -467,13 +579,21 @@ onMounted(reloadAll);
                 {{ item.checked }} / {{ item.synced }} / {{ item.failed }}
               </td>
               <td class="px-3 py-2">{{ formatDuration(item.duration_ms) }}</td>
-              <td class="px-3 py-2 text-black/70">{{ item.message || "-" }}</td>
+              <td class="px-3 py-2 text-black/70">{{ summarizeMessage(item.message) }}</td>
+              <td class="px-3 py-2">
+                <button
+                  class="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-xs hover:bg-sand/50"
+                  @click="openLogDetail(item)"
+                >
+                  详情
+                </button>
+              </td>
             </tr>
             <tr v-if="!logsLoading && logsItems.length === 0">
-              <td colspan="6" class="px-3 py-6 text-center text-black/55">暂无执行日志</td>
+              <td colspan="7" class="px-3 py-6 text-center text-black/55">暂无执行日志</td>
             </tr>
             <tr v-if="logsLoading">
-              <td colspan="6" class="px-3 py-6 text-center text-black/55">日志加载中...</td>
+              <td colspan="7" class="px-3 py-6 text-center text-black/55">日志加载中...</td>
             </tr>
           </tbody>
         </table>
@@ -495,6 +615,140 @@ onMounted(reloadAll);
             @click="goToLogsPage(logsPage + 1)"
           >
             下一页
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <div v-if="detailModalVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" @click.self="closeLogDetail">
+      <div class="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-black/10 px-5 py-3">
+          <h4 class="text-base font-semibold">
+            执行日志明细
+            <span v-if="activeLogDetail" class="text-sm text-black/55">#{{ activeLogDetail.id }}</span>
+          </h4>
+          <button
+            class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm hover:bg-sand/50"
+            @click="closeLogDetail"
+          >
+            关闭
+          </button>
+        </div>
+
+        <div class="max-h-[calc(90vh-60px)] overflow-y-auto px-5 py-4">
+          <p v-if="detailLoading" class="text-sm text-black/60">明细加载中...</p>
+          <p v-else-if="detailError" class="text-sm text-red-600">{{ detailError }}</p>
+
+          <template v-else-if="activeLogDetail">
+            <div class="grid gap-3 text-sm md:grid-cols-2">
+              <p><span class="text-black/55">触发时间：</span>{{ formatDateTime(activeLogDetail.triggered_at) }}</p>
+              <p><span class="text-black/55">Cron：</span>{{ activeLogDetail.cron_expr || "-" }}</p>
+              <p><span class="text-black/55">同步策略：</span>{{ formatMode(activeLogDetail.mode) }}</p>
+              <p><span class="text-black/55">状态：</span>{{ formatStatus(activeLogDetail.status) }}</p>
+              <p><span class="text-black/55">检查条数：</span>{{ activeLogDetail.checked }}</p>
+              <p><span class="text-black/55">同步条数：</span>{{ activeLogDetail.synced }}</p>
+              <p><span class="text-black/55">失败条数：</span>{{ activeLogDetail.failed }}</p>
+              <p><span class="text-black/55">耗时：</span>{{ formatDuration(activeLogDetail.duration_ms) }}</p>
+            </div>
+
+            <div class="mt-4">
+              <h5 class="text-sm font-semibold text-green-700">同步成功项（{{ activeLogDetail.synced_list.length }}）</h5>
+              <div class="mt-2 overflow-x-auto rounded-xl border border-black/10">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-black/5 text-left text-black/70">
+                    <tr>
+                      <th class="px-3 py-2 font-medium">类型</th>
+                      <th class="px-3 py-2 font-medium">名称</th>
+                      <th class="px-3 py-2 font-medium">TMDB ID</th>
+                      <th class="px-3 py-2 font-medium">远端差异字段</th>
+                      <th class="px-3 py-2 font-medium">字段前后</th>
+                      <th class="px-3 py-2 font-medium">本地变更字段</th>
+                      <th class="px-3 py-2 font-medium">本地覆盖字段</th>
+                      <th class="px-3 py-2 font-medium">本地保留字段</th>
+                      <th class="px-3 py-2 font-medium">信息</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="(entry, idx) in activeLogDetail.synced_list"
+                      :key="`synced-${idx}-${entry.media_type}-${entry.tmdb_id}`"
+                      class="border-t border-black/5"
+                    >
+                      <td class="px-3 py-2">{{ formatMediaType(entry.media_type) }}</td>
+                      <td class="px-3 py-2">{{ entry.name || "-" }}</td>
+                      <td class="px-3 py-2">{{ entry.tmdb_id || "-" }}</td>
+                      <td class="px-3 py-2">{{ formatFieldList(entry.remote_diff_fields) }}</td>
+                      <td class="px-3 py-2 whitespace-pre-wrap text-xs text-black/70">{{ formatFieldChanges(entry.field_changes) }}</td>
+                      <td class="px-3 py-2">{{ formatFieldList(entry.changed_fields) }}</td>
+                      <td class="px-3 py-2">{{ formatFieldList(entry.overwritten_fields) }}</td>
+                      <td class="px-3 py-2">{{ formatFieldList(entry.kept_local_fields) }}</td>
+                      <td class="px-3 py-2 text-black/70">{{ entry.message || "-" }}</td>
+                    </tr>
+                    <tr v-if="activeLogDetail.synced_list.length === 0">
+                      <td colspan="9" class="px-3 py-4 text-center text-black/55">无成功同步明细</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <h5 class="text-sm font-semibold text-red-700">同步失败项（{{ activeLogDetail.failed_list.length }}）</h5>
+              <div class="mt-2 overflow-x-auto rounded-xl border border-black/10">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-black/5 text-left text-black/70">
+                    <tr>
+                      <th class="px-3 py-2 font-medium">类型</th>
+                      <th class="px-3 py-2 font-medium">名称</th>
+                      <th class="px-3 py-2 font-medium">TMDB ID</th>
+                      <th class="px-3 py-2 font-medium">失败原因</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="(entry, idx) in activeLogDetail.failed_list"
+                      :key="`failed-${idx}-${entry.media_type}-${entry.tmdb_id}`"
+                      class="border-t border-black/5"
+                    >
+                      <td class="px-3 py-2">{{ formatMediaType(entry.media_type) }}</td>
+                      <td class="px-3 py-2">{{ entry.name || "-" }}</td>
+                      <td class="px-3 py-2">{{ entry.tmdb_id || "-" }}</td>
+                      <td class="px-3 py-2 text-black/70">{{ entry.message || "-" }}</td>
+                    </tr>
+                    <tr v-if="activeLogDetail.failed_list.length === 0">
+                      <td colspan="4" class="px-3 py-4 text-center text-black/55">无失败明细</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="clearLogsConfirmVisible" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-4" @click.self="closeClearLogsConfirm">
+      <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+        <h4 class="text-base font-semibold text-red-700">确认清空执行日志</h4>
+        <p class="mt-2 text-sm text-black/70">
+          确认要清空所有执行日志吗？清空后无法恢复。
+        </p>
+
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <button
+            class="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
+            :disabled="logsClearing"
+            @click="closeClearLogsConfirm"
+          >
+            取消
+          </button>
+          <button
+            class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 hover:bg-red-100 disabled:opacity-60"
+            :disabled="logsClearing"
+            @click="clearLogs"
+          >
+            {{ logsClearing ? "清空中..." : "确认清空" }}
           </button>
         </div>
       </div>

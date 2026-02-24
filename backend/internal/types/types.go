@@ -73,6 +73,10 @@ type AdminAutoSyncRunResp struct {
 	Message string `json:"message"`
 }
 
+type AdminAutoSyncLogClearResp struct {
+	Message string `json:"message"`
+}
+
 type AdminAutoSyncLogListReq struct {
 	Page     int    `form:"page,optional,default=1"`
 	PageSize int    `form:"page_size,optional,default=20"`
@@ -94,6 +98,48 @@ type AdminAutoSyncLogItem struct {
 	StartedAt   string `json:"started_at"`
 	FinishedAt  string `json:"finished_at"`
 	CreatedAt   string `json:"created_at"`
+}
+
+type AdminAutoSyncLogDetailReq struct {
+	Id int `path:"id"`
+}
+
+type AdminAutoSyncLogDetailEntry struct {
+	MediaType         string                        `json:"media_type"`
+	TmdbId            int                           `json:"tmdb_id"`
+	Name              string                        `json:"name"`
+	Message           string                        `json:"message"`
+	RemoteDiffFields  []string                      `json:"remote_diff_fields"`
+	FieldChanges      []AdminAutoSyncLogFieldChange `json:"field_changes"`
+	ChangedFields     []string                      `json:"changed_fields"`
+	OverwrittenFields []string                      `json:"overwritten_fields"`
+	KeptLocalFields   []string                      `json:"kept_local_fields"`
+}
+
+type AdminAutoSyncLogFieldChange struct {
+	Field    string `json:"field"`
+	DiffType string `json:"diff_type"`
+	Before   string `json:"before"`
+	After    string `json:"after"`
+}
+
+type AdminAutoSyncLogDetailResp struct {
+	Id          int64                         `json:"id"`
+	TriggeredAt string                        `json:"triggered_at"`
+	CronExpr    string                        `json:"cron_expr"`
+	Mode        string                        `json:"mode"`
+	BatchSize   int                           `json:"batch_size"`
+	Status      string                        `json:"status"`
+	Checked     int                           `json:"checked"`
+	Synced      int                           `json:"synced"`
+	Failed      int                           `json:"failed"`
+	DurationMs  int64                         `json:"duration_ms"`
+	Message     string                        `json:"message"`
+	StartedAt   string                        `json:"started_at"`
+	FinishedAt  string                        `json:"finished_at"`
+	CreatedAt   string                        `json:"created_at"`
+	SyncedList  []AdminAutoSyncLogDetailEntry `json:"synced_list"`
+	FailedList  []AdminAutoSyncLogDetailEntry `json:"failed_list"`
 }
 
 type AdminAutoSyncLogListResp struct {

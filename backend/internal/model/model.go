@@ -137,11 +137,12 @@ type AutoSyncExecutionLog struct {
 	FinishedAt time.Time `gorm:"index" json:"finished_at"`
 	DurationMs int64     `json:"duration_ms"`
 
-	Status  string `gorm:"size:32;index" json:"status"`
-	Checked int    `json:"checked"`
-	Synced  int    `json:"synced"`
-	Failed  int    `json:"failed"`
-	Message string `gorm:"type:text" json:"message"`
+	Status  string  `gorm:"size:32;index" json:"status"`
+	Checked int     `json:"checked"`
+	Synced  int     `json:"synced"`
+	Failed  int     `json:"failed"`
+	Message string  `gorm:"type:text" json:"message"`
+	Detail  RawJSON `gorm:"type:jsonb" json:"detail"`
 }
 
 // AutoMigrate 自动建表迁移

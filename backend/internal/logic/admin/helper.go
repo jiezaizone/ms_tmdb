@@ -1,6 +1,8 @@
 package admin
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -547,10 +549,10 @@ func appendCompareDiffDetails(details []types.AdminCompareFieldDetail, fields []
 		localText := "-"
 		remoteText := "-"
 		if localOK {
-			localText = summarizeDiffValue(field, localValue)
+			localText = summarizeDiffValueForCompare(field, localValue)
 		}
 		if remoteOK {
-			remoteText = summarizeDiffValue(field, remoteValue)
+			remoteText = summarizeDiffValueForCompare(field, remoteValue)
 		}
 
 		details = append(details, types.AdminCompareFieldDetail{
@@ -561,6 +563,28 @@ func appendCompareDiffDetails(details []types.AdminCompareFieldDetail, fields []
 		})
 	}
 	return details
+}
+
+func summarizeDiffValueForCompare(field string, value interface{}) string {
+	base := summarizeDiffValue(field, value)
+	fp := diffValueFingerprint(value)
+	if fp == "" {
+		return base
+	}
+	return base + " #" + fp
+}
+
+func diffValueFingerprint(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+	raw, err := json.Marshal(value)
+	if err != nil || len(raw) == 0 {
+		return ""
+	}
+
+	sum := sha1.Sum(raw)
+	return hex.EncodeToString(sum[:])[:10]
 }
 
 func summarizeDiffValue(field string, value interface{}) string {

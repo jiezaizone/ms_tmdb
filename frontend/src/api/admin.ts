@@ -50,6 +50,10 @@ export type AdminAutoSyncRunResp = {
   message: string;
 };
 
+export type AdminAutoSyncLogClearResp = {
+  message: string;
+};
+
 export type AdminAutoSyncLogItem = {
   id: number;
   triggered_at: string;
@@ -65,6 +69,44 @@ export type AdminAutoSyncLogItem = {
   started_at: string;
   finished_at: string;
   created_at: string;
+};
+
+export type AdminAutoSyncLogDetailEntry = {
+  media_type: string;
+  tmdb_id: number;
+  name: string;
+  message: string;
+  remote_diff_fields: string[];
+  field_changes: AdminAutoSyncLogFieldChange[];
+  changed_fields: string[];
+  overwritten_fields: string[];
+  kept_local_fields: string[];
+};
+
+export type AdminAutoSyncLogFieldChange = {
+  field: string;
+  diff_type: string;
+  before: string;
+  after: string;
+};
+
+export type AdminAutoSyncLogDetailResp = {
+  id: number;
+  triggered_at: string;
+  cron_expr: string;
+  mode: string;
+  batch_size: number;
+  status: string;
+  checked: number;
+  synced: number;
+  failed: number;
+  duration_ms: number;
+  message: string;
+  started_at: string;
+  finished_at: string;
+  created_at: string;
+  synced_list: AdminAutoSyncLogDetailEntry[];
+  failed_list: AdminAutoSyncLogDetailEntry[];
 };
 
 export type AdminAutoSyncLogListResp = {
@@ -259,6 +301,14 @@ export function runAutoSyncNow() {
 
 export function getAutoSyncLogs(params: AdminAutoSyncLogListParams = {}) {
   return http.get<AdminAutoSyncLogListResp>("/api/admin/auto-sync/logs", { params });
+}
+
+export function getAutoSyncLogDetail(id: number) {
+  return http.get<AdminAutoSyncLogDetailResp>(`/api/admin/auto-sync/logs/${id}`);
+}
+
+export function clearAutoSyncLogs() {
+  return http.delete<AdminAutoSyncLogClearResp>("/api/admin/auto-sync/logs");
 }
 
 export function uploadAdminImage(file: File) {

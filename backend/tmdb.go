@@ -75,6 +75,8 @@ func main() {
 			{Method: http.MethodPut, Path: "/auto-sync", Handler: adminhandler.UpdateAutoSyncSettingsHandler(ctx)},
 			{Method: http.MethodPost, Path: "/auto-sync/run", Handler: adminhandler.RunAutoSyncNowHandler(ctx)},
 			{Method: http.MethodGet, Path: "/auto-sync/logs", Handler: adminhandler.ListAutoSyncLogsHandler(ctx)},
+			{Method: http.MethodDelete, Path: "/auto-sync/logs", Handler: adminhandler.ClearAutoSyncLogsHandler(ctx)},
+			{Method: http.MethodGet, Path: "/auto-sync/logs/:id", Handler: adminhandler.GetAutoSyncLogDetailHandler(ctx)},
 			{Method: http.MethodPost, Path: "/upload/image", Handler: adminhandler.UploadImageHandler(ctx)},
 		},
 		rest.WithPrefix("/api/admin"),

@@ -177,6 +177,10 @@ type (
 		Running bool   `json:"running"`
 		Message string `json:"message"`
 	}
+	// 管理接口 - 清空自动同步日志响应
+	AdminAutoSyncLogClearResp {
+		Message string `json:"message"`
+	}
 	// 管理接口 - 自动同步日志列表请求
 	AdminAutoSyncLogListReq {
 		Page     int    `form:"page,optional,default=1"`
@@ -199,6 +203,48 @@ type (
 		StartedAt  string `json:"started_at"`
 		FinishedAt string `json:"finished_at"`
 		CreatedAt  string `json:"created_at"`
+	}
+	// 管理接口 - 自动同步日志详情请求
+	AdminAutoSyncLogDetailReq {
+		Id int `path:"id"`
+	}
+	// 管理接口 - 自动同步日志详情项
+	AdminAutoSyncLogDetailEntry {
+		MediaType         string   `json:"media_type"`
+		TmdbId            int      `json:"tmdb_id"`
+		Name              string   `json:"name"`
+		Message           string   `json:"message"`
+		RemoteDiffFields  []string `json:"remote_diff_fields"`
+		FieldChanges      []AdminAutoSyncLogFieldChange `json:"field_changes"`
+		ChangedFields     []string `json:"changed_fields"`
+		OverwrittenFields []string `json:"overwritten_fields"`
+		KeptLocalFields   []string `json:"kept_local_fields"`
+	}
+	// 管理接口 - 自动同步日志字段差异
+	AdminAutoSyncLogFieldChange {
+		Field    string `json:"field"`
+		DiffType string `json:"diff_type"`
+		Before   string `json:"before"`
+		After    string `json:"after"`
+	}
+	// 管理接口 - 自动同步日志详情响应
+	AdminAutoSyncLogDetailResp {
+		Id         int64  `json:"id"`
+		TriggeredAt string `json:"triggered_at"`
+		CronExpr   string `json:"cron_expr"`
+		Mode       string `json:"mode"`
+		BatchSize  int    `json:"batch_size"`
+		Status     string `json:"status"`
+		Checked    int    `json:"checked"`
+		Synced     int    `json:"synced"`
+		Failed     int    `json:"failed"`
+		DurationMs int64  `json:"duration_ms"`
+		Message    string `json:"message"`
+		StartedAt  string `json:"started_at"`
+		FinishedAt string `json:"finished_at"`
+		CreatedAt  string `json:"created_at"`
+		SyncedList []AdminAutoSyncLogDetailEntry `json:"synced_list"`
+		FailedList []AdminAutoSyncLogDetailEntry `json:"failed_list"`
 	}
 	// 管理接口 - 自动同步日志列表响应
 	AdminAutoSyncLogListResp {
@@ -606,6 +652,12 @@ service tmdb-api {
 
 	@handler ListAutoSyncLogs
 	get /auto-sync/logs (AdminAutoSyncLogListReq) returns (AdminAutoSyncLogListResp)
+
+	@handler ClearAutoSyncLogs
+	delete /auto-sync/logs returns (AdminAutoSyncLogClearResp)
+
+	@handler GetAutoSyncLogDetail
+	get /auto-sync/logs/:id (AdminAutoSyncLogDetailReq) returns (AdminAutoSyncLogDetailResp)
 
 	@handler UploadImage
 	post /upload/image returns (AdminUploadResp)
