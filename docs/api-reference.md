@@ -14,7 +14,7 @@
 
 1. 客户端无需传 `api_key`，服务端会自动附加 TMDB Key。
 2. 常用查询参数（如 `language`、`page`、`region`、`append_to_response`）会按接口定义透传。
-3. 实际可用路由以 `backend/api/tmdb.api` 与 `backend/internal/handler/routes.go` 为准。
+3. 实际可用路由以 `backend/api/tmdb.api` 为准。
 
 ## 一、TMDB 代理接口（`/api/v3`）
 

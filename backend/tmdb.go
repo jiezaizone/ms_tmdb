@@ -68,7 +68,7 @@ func main() {
 			{Method: http.MethodDelete, Path: "/tv/:id/local", Handler: adminhandler.ClearTvSeriesLocalHandler(ctx)},
 			{Method: http.MethodGet, Path: "/stats", Handler: adminhandler.GetStatsHandler(ctx)},
 			{Method: http.MethodGet, Path: "/movies", Handler: adminhandler.ListMoviesHandler(ctx)},
-			{Method: http.MethodGet, Path: "/tv", Handler: adminhandler.ListTvSeriesHandler(ctx)},
+			{Method: http.MethodGet, Path: "/tv-series", Handler: adminhandler.ListTvSeriesHandler(ctx)},
 			{Method: http.MethodGet, Path: "/proxy", Handler: adminhandler.GetProxySettingsHandler(ctx)},
 			{Method: http.MethodPut, Path: "/proxy", Handler: adminhandler.UpdateProxySettingsHandler(ctx)},
 			{Method: http.MethodGet, Path: "/auto-sync", Handler: adminhandler.GetAutoSyncSettingsHandler(ctx)},

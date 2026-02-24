@@ -55,6 +55,27 @@ body {
   min-height: 220px;
 }
 
+.hero-banner-detail {
+  min-height: 220px;
+  background: #0f1116;
+}
+
+.hero-banner-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (min-width: 768px) {
+  .hero-banner-media {
+    object-fit: cover;
+    object-position: center 28%;
+  }
+}
+
 .hero-overlay {
   @apply absolute inset-0 flex flex-col justify-end p-6;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 60%);

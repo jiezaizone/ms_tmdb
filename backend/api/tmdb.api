@@ -130,6 +130,24 @@ type (
 		IsLocal bool   `json:"is_local"`
 		Message string `json:"message"`
 	}
+	// 管理接口 - 本地季详情路径请求
+	AdminTvSeasonLocalReq {
+		Id           int    `path:"id"`
+		SeasonNumber int    `path:"season_number"`
+		Language     string `form:"language,optional"`
+	}
+	// 管理接口 - 本地季详情更新请求
+	AdminTvSeasonLocalUpdateReq {
+		Id           int             `path:"id"`
+		SeasonNumber int             `path:"season_number"`
+		Payload      map[string]any  `json:"payload"`
+	}
+	// 管理接口 - 本地季详情响应
+	AdminTvSeasonLocalResp {
+		Saved   bool           `json:"saved"`
+		Data    map[string]any `json:"data"`
+		Message string         `json:"message,optional"`
+	}
 	// 管理接口 - 同步请求
 	AdminSyncReq {
 		Id              int      `path:"id"`
@@ -607,6 +625,15 @@ service tmdb-api {
 
 	@handler UpdateTvSeries
 	put /tv/:id (AdminUpdateReq)
+
+	@handler GetTvSeasonLocal
+	get /tv/:id/season/:season_number/local (AdminTvSeasonLocalReq) returns (AdminTvSeasonLocalResp)
+
+	@handler SaveTvSeasonLocal
+	post /tv/:id/season/:season_number/local (AdminTvSeasonLocalReq) returns (AdminTvSeasonLocalResp)
+
+	@handler UpdateTvSeasonLocal
+	put /tv/:id/season/:season_number/local (AdminTvSeasonLocalUpdateReq) returns (AdminTvSeasonLocalResp)
 
 	@handler UpdatePerson
 	put /person/:id (AdminUpdateReq)

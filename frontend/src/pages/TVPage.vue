@@ -752,10 +752,12 @@ watch(tvId, () => {
 
   <template v-else-if="detail">
     <!-- 背景横幅 -->
-    <section
-      class="hero-banner"
-      :style="{ backgroundImage: `url(${tmdbImg(detail.backdrop_path, 'w780')})` }"
-    >
+    <section class="hero-banner hero-banner-detail">
+      <img
+        :src="tmdbImg(detail.backdrop_path, 'w780')"
+        :alt="detail.name || detail.original_name"
+        class="hero-banner-media"
+      />
       <div class="absolute left-4 top-4 z-10">
         <button
           class="rounded-lg border border-white/40 bg-black/40 px-3 py-1.5 text-xs text-white backdrop-blur hover:bg-black/55"
