@@ -171,6 +171,12 @@ type (
 		StartDelaySecond int    `json:"start_delay_second"`
 		Running          bool   `json:"running"`
 	}
+	// 管理接口 - 手动触发自动同步响应
+	AdminAutoSyncRunResp {
+		Started bool   `json:"started"`
+		Running bool   `json:"running"`
+		Message string `json:"message"`
+	}
 	// 管理接口 - 自动同步日志列表请求
 	AdminAutoSyncLogListReq {
 		Page     int    `form:"page,optional,default=1"`
@@ -594,6 +600,9 @@ service tmdb-api {
 
 	@handler UpdateAutoSyncSettings
 	put /auto-sync (AdminAutoSyncReq) returns (AdminAutoSyncResp)
+
+	@handler RunAutoSyncNow
+	post /auto-sync/run returns (AdminAutoSyncRunResp)
 
 	@handler ListAutoSyncLogs
 	get /auto-sync/logs (AdminAutoSyncLogListReq) returns (AdminAutoSyncLogListResp)

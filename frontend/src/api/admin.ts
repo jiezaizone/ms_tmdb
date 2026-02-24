@@ -44,6 +44,12 @@ export type AdminAutoSyncPayload = {
   start_delay_second?: number;
 };
 
+export type AdminAutoSyncRunResp = {
+  started: boolean;
+  running: boolean;
+  message: string;
+};
+
 export type AdminAutoSyncLogItem = {
   id: number;
   triggered_at: string;
@@ -245,6 +251,10 @@ export function getAutoSyncSettings() {
 
 export function updateAutoSyncSettings(payload: AdminAutoSyncPayload) {
   return http.put<AdminAutoSyncResp>("/api/admin/auto-sync", payload);
+}
+
+export function runAutoSyncNow() {
+  return http.post<AdminAutoSyncRunResp>("/api/admin/auto-sync/run");
 }
 
 export function getAutoSyncLogs(params: AdminAutoSyncLogListParams = {}) {

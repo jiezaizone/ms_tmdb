@@ -67,6 +67,12 @@ type AdminAutoSyncResp struct {
 	Running          bool   `json:"running"`
 }
 
+type AdminAutoSyncRunResp struct {
+	Started bool   `json:"started"`
+	Running bool   `json:"running"`
+	Message string `json:"message"`
+}
+
 type AdminAutoSyncLogListReq struct {
 	Page     int    `form:"page,optional,default=1"`
 	PageSize int    `form:"page_size,optional,default=20"`

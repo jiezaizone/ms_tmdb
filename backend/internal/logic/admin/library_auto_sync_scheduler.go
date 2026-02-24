@@ -176,6 +176,43 @@ func (s *LibraryAutoSyncScheduler) UpdateSettings(input AutoSyncSettings) (AutoS
 	return settings, nil
 }
 
+func (s *LibraryAutoSyncScheduler) TriggerNow() (bool, bool, error) {
+	s.mu.Lock()
+	if !s.started {
+		running := s.running
+		s.mu.Unlock()
+		return false, running, fmt.Errorf("自动同步调度器未启动")
+	}
+	if s.running {
+		s.mu.Unlock()
+		return false, true, nil
+	}
+
+	settings := s.settings
+	s.running = true
+	s.mu.Unlock()
+
+	triggeredAt := time.Now()
+	logx.Infof(
+		"TMDB 自动同步手动触发: cron=%s, mode=%s, batch_size=%d",
+		settings.CronExpr,
+		settings.Mode,
+		settings.BatchSize,
+	)
+
+	go func() {
+		defer func() {
+			s.mu.Lock()
+			s.running = false
+			s.mu.Unlock()
+		}()
+
+		s.runOnce(settings, triggeredAt)
+	}()
+
+	return true, true, nil
+}
+
 func (s *LibraryAutoSyncScheduler) maybeRun() {
 	s.mu.Lock()
 	if !s.settings.Enabled || s.running || s.cronMatcher == nil {

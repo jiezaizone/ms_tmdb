@@ -4,6 +4,7 @@ import {
   getAutoSyncLogs,
   getAutoSyncSettings,
   getProxySettings,
+  runAutoSyncNow,
   updateAutoSyncSettings,
   updateProxySettings,
   type AdminAutoSyncLogItem,
@@ -27,6 +28,7 @@ const syncMode = ref<AdminAutoSyncMode>("update_unmodified");
 const syncBatchSize = ref(50);
 const syncStartDelaySecond = ref(15);
 const syncRunning = ref(false);
+const syncTriggering = ref(false);
 
 const logsLoading = ref(false);
 const logsError = ref("");
@@ -232,6 +234,24 @@ async function saveAutoSyncSettings() {
   }
 }
 
+async function triggerAutoSyncNow() {
+  syncTriggering.value = true;
+  syncError.value = "";
+  syncMessage.value = "";
+
+  try {
+    const resp = await runAutoSyncNow();
+    const data = resp.data;
+    syncRunning.value = !!data.running;
+    syncMessage.value = data.message || "已触发一次立即同步任务";
+    await loadAutoSyncLogs(1);
+  } catch (err: any) {
+    syncError.value = err.message ?? "触发立即同步失败";
+  } finally {
+    syncTriggering.value = false;
+  }
+}
+
 async function reloadAll() {
   await Promise.all([loadSettings(), loadAutoSyncLogs(logsPage.value)]);
 }
@@ -248,7 +268,7 @@ onMounted(reloadAll);
       <div v-else class="mt-3">
         <button
           class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
-          :disabled="proxySaving || syncSaving || logsLoading"
+          :disabled="proxySaving || syncSaving || syncTriggering || logsLoading"
           @click="reloadAll"
         >
           重新读取全部设置
@@ -357,10 +377,17 @@ onMounted(reloadAll);
       <div class="mt-4 flex items-center gap-3">
         <button
           class="rounded-xl bg-pine px-4 py-2 text-sm font-medium text-white hover:bg-pine/90 disabled:opacity-60"
-          :disabled="syncSaving"
+          :disabled="syncSaving || syncTriggering"
           @click="saveAutoSyncSettings"
         >
           {{ syncSaving ? "保存中..." : "保存定时同步设置" }}
+        </button>
+        <button
+          class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
+          :disabled="syncSaving || syncTriggering"
+          @click="triggerAutoSyncNow"
+        >
+          {{ syncTriggering ? "触发中..." : "立即执行一次" }}
         </button>
       </div>
       <p v-if="syncMessage" class="mt-3 text-sm text-green-700">{{ syncMessage }}</p>
