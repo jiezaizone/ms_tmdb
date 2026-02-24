@@ -209,7 +209,4 @@ if cmp_resp.get("has_diff"):
 
 ## 文档
 
-- `docs/project-plan.md`
 - `docs/api-reference.md`
-- `docs/frontend-plan.md`
-- `docs/implementation-schedule.md`
