@@ -88,6 +88,48 @@ type (
 		NumberOfEpisodes int      `json:"number_of_episodes,optional"`
 		Type             string   `json:"type,optional"`
 	}
+	// 管理接口 - 新建电影请求
+	AdminCreateMovieReq {
+		Title            string   `json:"title"`
+		OriginalTitle    string   `json:"original_title,optional"`
+		Overview         string   `json:"overview,optional"`
+		Tagline          string   `json:"tagline,optional"`
+		ReleaseDate      string   `json:"release_date,optional"`
+		Status           string   `json:"status,optional"`
+		Runtime          int      `json:"runtime,optional"`
+		OriginalLanguage string   `json:"original_language,optional"`
+		Homepage         string   `json:"homepage,optional"`
+		PosterPath       string   `json:"poster_path,optional"`
+		BackdropPath     string   `json:"backdrop_path,optional"`
+		VoteAverage      float64  `json:"vote_average,optional"`
+		Popularity       float64  `json:"popularity,optional"`
+		GenreNames       []string `json:"genre_names,optional"`
+	}
+	// 管理接口 - 新建剧集请求
+	AdminCreateTvReq {
+		Name             string   `json:"name"`
+		OriginalName     string   `json:"original_name,optional"`
+		Overview         string   `json:"overview,optional"`
+		Tagline          string   `json:"tagline,optional"`
+		FirstAirDate     string   `json:"first_air_date,optional"`
+		Status           string   `json:"status,optional"`
+		NumberOfSeasons  int      `json:"number_of_seasons,optional"`
+		NumberOfEpisodes int      `json:"number_of_episodes,optional"`
+		OriginalLanguage string   `json:"original_language,optional"`
+		Homepage         string   `json:"homepage,optional"`
+		PosterPath       string   `json:"poster_path,optional"`
+		BackdropPath     string   `json:"backdrop_path,optional"`
+		VoteAverage      float64  `json:"vote_average,optional"`
+		Popularity       float64  `json:"popularity,optional"`
+		Type             string   `json:"type,optional"`
+		GenreNames       []string `json:"genre_names,optional"`
+	}
+	// 管理接口 - 新建响应
+	AdminCreateResp {
+		TmdbId  int    `json:"tmdb_id"`
+		IsLocal bool   `json:"is_local"`
+		Message string `json:"message"`
+	}
 	// 管理接口 - 同步请求
 	AdminSyncReq {
 		Id              int      `path:"id"`
@@ -129,6 +171,14 @@ type (
 		PageSize   int    `form:"page_size,optional,default=20"`
 		Keyword    string `form:"keyword,optional"`
 		SearchMode string `form:"search_mode,optional,default=contains"`
+	}
+	// 上传图片响应
+	AdminUploadResp {
+		Path string `json:"path"`
+	}
+	// 上传文件路径参数
+	UploadFileReq {
+		Filename string `path:"filename"`
 	}
 	// 电影列表项
 	MovieListItem {
@@ -433,8 +483,20 @@ service tmdb-api {
 	group:  admin
 )
 service tmdb-api {
+	@handler CreateMovie
+	post /movie (AdminCreateMovieReq) returns (AdminCreateResp)
+
+	@handler DeleteMovie
+	delete /movie/:id (PathIdReq)
+
 	@handler UpdateMovie
 	put /movie/:id (AdminUpdateReq)
+
+	@handler CreateTvSeries
+	post /tv (AdminCreateTvReq) returns (AdminCreateResp)
+
+	@handler DeleteTvSeries
+	delete /tv/:id (PathIdReq)
 
 	@handler UpdateTvSeries
 	put /tv/:id (AdminUpdateReq)
@@ -471,6 +533,9 @@ service tmdb-api {
 
 	@handler UpdateProxySettings
 	put /proxy (AdminProxyReq) returns (AdminProxyResp)
+
+	@handler UploadImage
+	post /upload/image returns (AdminUploadResp)
 
 	@handler CompareMovieRemote
 	get /compare/movie/:id (AdminSyncReq) returns (AdminCompareResp)

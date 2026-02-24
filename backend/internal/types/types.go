@@ -10,6 +10,29 @@ type AdminCompareResp struct {
 	Message                 string   `json:"message"`
 }
 
+type AdminCreateMovieReq struct {
+	Title            string   `json:"title"`
+	OriginalTitle    string   `json:"original_title,optional"`
+	Overview         string   `json:"overview,optional"`
+	Tagline          string   `json:"tagline,optional"`
+	ReleaseDate      string   `json:"release_date,optional"`
+	Status           string   `json:"status,optional"`
+	Runtime          *int     `json:"runtime,optional"`
+	OriginalLanguage string   `json:"original_language,optional"`
+	Homepage         string   `json:"homepage,optional"`
+	PosterPath       string   `json:"poster_path,optional"`
+	BackdropPath     string   `json:"backdrop_path,optional"`
+	VoteAverage      *float64 `json:"vote_average,optional"`
+	Popularity       *float64 `json:"popularity,optional"`
+	GenreNames       []string `json:"genre_names,optional"`
+}
+
+type AdminCreateResp struct {
+	TmdbId  int    `json:"tmdb_id"`
+	IsLocal bool   `json:"is_local"`
+	Message string `json:"message"`
+}
+
 type AdminProxyReq struct {
 	ProxyURL string `json:"proxy_url,optional"`
 }
@@ -58,6 +81,29 @@ type AdminUpdateReq struct {
 	Type             *string  `json:"type,optional"`
 }
 
+type AdminUploadResp struct {
+	Path string `json:"path"`
+}
+
+type AdminCreateTvReq struct {
+	Name             string   `json:"name"`
+	OriginalName     string   `json:"original_name,optional"`
+	Overview         string   `json:"overview,optional"`
+	Tagline          string   `json:"tagline,optional"`
+	FirstAirDate     string   `json:"first_air_date,optional"`
+	Status           string   `json:"status,optional"`
+	NumberOfSeasons  *int     `json:"number_of_seasons,optional"`
+	NumberOfEpisodes *int     `json:"number_of_episodes,optional"`
+	OriginalLanguage string   `json:"original_language,optional"`
+	Homepage         string   `json:"homepage,optional"`
+	PosterPath       string   `json:"poster_path,optional"`
+	BackdropPath     string   `json:"backdrop_path,optional"`
+	VoteAverage      *float64 `json:"vote_average,optional"`
+	Popularity       *float64 `json:"popularity,optional"`
+	Type             string   `json:"type,optional"`
+	GenreNames       []string `json:"genre_names,optional"`
+}
+
 type DetailReq struct {
 	Id               int    `path:"id"`
 	Language         string `form:"language,optional"`
@@ -95,14 +141,15 @@ type LibraryListReq struct {
 }
 
 type MovieListItem struct {
-	TmdbId        int     `json:"tmdb_id"`
-	Title         string  `json:"title"`
-	OriginalTitle string  `json:"original_title"`
-	PosterPath    string  `json:"poster_path"`
-	VoteAverage   float64 `json:"vote_average"`
-	ReleaseDate   string  `json:"release_date"`
-	Popularity    float64 `json:"popularity"`
-	IsModified    bool    `json:"is_modified"`
+	TmdbId        int      `json:"tmdb_id"`
+	Title         string   `json:"title"`
+	OriginalTitle string   `json:"original_title"`
+	PosterPath    string   `json:"poster_path"`
+	VoteAverage   float64  `json:"vote_average"`
+	ReleaseDate   string   `json:"release_date"`
+	Popularity    float64  `json:"popularity"`
+	IsModified    bool     `json:"is_modified"`
+	GenreNames    []string `json:"genre_names"`
 }
 
 type MovieListResp struct {
@@ -150,16 +197,17 @@ type TvSeasonReq struct {
 }
 
 type TvSeriesListItem struct {
-	TmdbId           int     `json:"tmdb_id"`
-	Name             string  `json:"name"`
-	OriginalName     string  `json:"original_name"`
-	PosterPath       string  `json:"poster_path"`
-	VoteAverage      float64 `json:"vote_average"`
-	FirstAirDate     string  `json:"first_air_date"`
-	NumberOfSeasons  int     `json:"number_of_seasons"`
-	NumberOfEpisodes int     `json:"number_of_episodes"`
-	Popularity       float64 `json:"popularity"`
-	IsModified       bool    `json:"is_modified"`
+	TmdbId           int      `json:"tmdb_id"`
+	Name             string   `json:"name"`
+	OriginalName     string   `json:"original_name"`
+	PosterPath       string   `json:"poster_path"`
+	VoteAverage      float64  `json:"vote_average"`
+	FirstAirDate     string   `json:"first_air_date"`
+	NumberOfSeasons  int      `json:"number_of_seasons"`
+	NumberOfEpisodes int      `json:"number_of_episodes"`
+	Popularity       float64  `json:"popularity"`
+	IsModified       bool     `json:"is_modified"`
+	GenreNames       []string `json:"genre_names"`
 }
 
 type TvSeriesListResp struct {
@@ -167,4 +215,8 @@ type TvSeriesListResp struct {
 	Page     int                `json:"page"`
 	PageSize int                `json:"page_size"`
 	Results  []TvSeriesListItem `json:"results"`
+}
+
+type UploadFileReq struct {
+	Filename string `path:"filename"`
 }

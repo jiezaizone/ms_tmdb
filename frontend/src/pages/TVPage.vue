@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { compareTVRemote, updateTV } from "@/api/admin";
+import { compareTVRemote, deleteTV, updateTV } from "@/api/admin";
 import type { AdminSyncMode } from "@/api/admin";
 import DetailSyncPanel from "@/components/DetailSyncPanel.vue";
 import { getTVDetail, getTVGenreList } from "@/api/tv";
 import { tmdbImg } from "@/api/tmdb";
+import { formatStatusLabel, formatTvTypeLabel, tvStatusOptions, tvTypeOptions } from "@/constants/mediaStatus";
 
 type GenreOption = {
   id: number;
@@ -47,8 +48,10 @@ const error = ref("");
 const detail = ref<any>(null);
 const isEditing = ref(false);
 const saving = ref(false);
+const deleting = ref(false);
 const saveError = ref("");
 const saveMessage = ref("");
+const deleteError = ref("");
 const comparedRemoteId = ref<number | null>(null);
 const checkingRemoteDiff = ref(false);
 const remoteDiffNotice = ref<RemoteDiffNotice | null>(null);
@@ -195,8 +198,40 @@ function cancelEditMode() {
   isEditing.value = false;
 }
 
+async function deleteCurrentTV() {
+  if (!tvId.value) {
+    deleteError.value = "无效剧集 ID";
+    return;
+  }
+  const name = detail.value?.name || detail.value?.original_name || `ID ${tvId.value}`;
+  const confirmed = window.confirm(`确认删除「${name}」的本地数据吗？\n删除后不可恢复。`);
+  if (!confirmed) return;
+
+  deleting.value = true;
+  deleteError.value = "";
+  try {
+    await deleteTV(tvId.value);
+    await router.push({
+      path: "/library",
+      query: { tab: "tv" },
+    });
+  } catch (err: any) {
+    deleteError.value = err.message ?? "删除失败";
+  } finally {
+    deleting.value = false;
+  }
+}
+
 async function checkRemoteDiffAndPrompt() {
   if (!tvId.value || checkingRemoteDiff.value || comparedRemoteId.value === tvId.value) {
+    return;
+  }
+  if (tvId.value < 0) {
+    remoteDiffNotice.value = null;
+    remoteDiffDecision.value = "keep_local";
+    remoteDiffError.value = "";
+    remoteDiffMessage.value = "本地新建条目不参与 TMDB 远程差异检测";
+    comparedRemoteId.value = tvId.value;
     return;
   }
   checkingRemoteDiff.value = true;
@@ -417,7 +452,8 @@ watch(tvId, () => {
             <span v-if="detail.number_of_seasons" class="badge">
               {{ detail.number_of_seasons }} 季 · {{ detail.number_of_episodes }} 集
             </span>
-            <span class="badge">{{ detail.status ?? "未知" }}</span>
+            <span class="badge">{{ formatStatusLabel(detail.status) }}</span>
+            <span v-if="detail.type" class="badge">{{ formatTvTypeLabel(detail.type) }}</span>
           </div>
 
           <div v-if="detail.genres?.length" class="mt-3 flex flex-wrap gap-1.5">
@@ -483,13 +519,22 @@ watch(tvId, () => {
           <div class="mt-6 rounded-xl border border-black/10 bg-white/70 p-4">
             <div class="flex items-center justify-between gap-3">
               <h3 class="text-sm font-semibold">本地信息编辑</h3>
-              <button
-                v-if="!isEditing"
-                class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-sand/50"
-                @click="enterEditMode"
-              >
-                编辑
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  class="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs text-red-700 hover:bg-red-100 disabled:opacity-60"
+                  :disabled="deleting || saving"
+                  @click="deleteCurrentTV"
+                >
+                  {{ deleting ? "删除中..." : "删除本地数据" }}
+                </button>
+                <button
+                  v-if="!isEditing"
+                  class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-sand/50"
+                  @click="enterEditMode"
+                >
+                  编辑
+                </button>
+              </div>
             </div>
 
             <p v-if="!isEditing" class="mt-2 text-xs text-black/60">
@@ -552,19 +597,21 @@ watch(tvId, () => {
                 </label>
                 <label class="text-xs text-black/60">
                   状态
-                  <input
+                  <select
                     v-model="editForm.status"
                     class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
-                    placeholder="Returning Series"
-                  />
+                  >
+                    <option v-for="status in tvStatusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
+                  </select>
                 </label>
                 <label class="text-xs text-black/60">
                   剧集类型
-                  <input
+                  <select
                     v-model="editForm.type"
                     class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
-                    placeholder="Scripted / Miniseries"
-                  />
+                  >
+                    <option v-for="item in tvTypeOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+                  </select>
                 </label>
                 <label class="text-xs text-black/60">
                   季数
@@ -662,6 +709,7 @@ watch(tvId, () => {
             <div class="mt-2">
               <span v-if="saveMessage" class="text-xs text-green-700">{{ saveMessage }}</span>
               <span v-if="saveError" class="text-xs text-red-600">{{ saveError }}</span>
+              <span v-if="deleteError" class="ml-2 text-xs text-red-600">{{ deleteError }}</span>
             </div>
           </div>
 

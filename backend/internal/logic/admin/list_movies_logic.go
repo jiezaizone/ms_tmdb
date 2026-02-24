@@ -41,7 +41,7 @@ func (l *ListMoviesLogic) ListMovies(req *types.LibraryListReq) (*types.MovieLis
 	}
 
 	var items []model.Movie
-	if err := query.Select("id, tmdb_id, title, original_title, poster_path, backdrop_path, vote_average, release_date, popularity, is_modified, last_synced_at, created_at").
+	if err := query.Select("id, tmdb_id, title, original_title, poster_path, backdrop_path, vote_average, release_date, popularity, is_modified, tmdb_data, local_data, last_synced_at, created_at").
 		Order("popularity DESC").
 		Offset((page - 1) * pageSize).Limit(pageSize).
 		Find(&items).Error; err != nil {
@@ -59,6 +59,7 @@ func (l *ListMoviesLogic) ListMovies(req *types.LibraryListReq) (*types.MovieLis
 			ReleaseDate:   m.ReleaseDate,
 			Popularity:    m.Popularity,
 			IsModified:    m.IsModified,
+			GenreNames:    mergeGenreNames(genreNamesFromRaw(m.LocalData), genreNamesFromRaw(m.TmdbData)),
 		}
 	}
 

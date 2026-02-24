@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { compareMovieRemote, updateMovie } from "@/api/admin";
+import { compareMovieRemote, deleteMovie, updateMovie } from "@/api/admin";
 import type { AdminSyncMode } from "@/api/admin";
 import DetailSyncPanel from "@/components/DetailSyncPanel.vue";
 import { getMovieDetail, getMovieGenreList } from "@/api/movie";
 import { tmdbImg } from "@/api/tmdb";
+import { formatStatusLabel, movieStatusOptions } from "@/constants/mediaStatus";
 
 type GenreOption = {
   id: number;
@@ -45,8 +46,10 @@ const error = ref("");
 const detail = ref<any>(null);
 const isEditing = ref(false);
 const saving = ref(false);
+const deleting = ref(false);
 const saveError = ref("");
 const saveMessage = ref("");
+const deleteError = ref("");
 const comparedRemoteId = ref<number | null>(null);
 const checkingRemoteDiff = ref(false);
 const remoteDiffNotice = ref<RemoteDiffNotice | null>(null);
@@ -189,8 +192,40 @@ function cancelEditMode() {
   isEditing.value = false;
 }
 
+async function deleteCurrentMovie() {
+  if (!movieId.value) {
+    deleteError.value = "无效电影 ID";
+    return;
+  }
+  const name = detail.value?.title || detail.value?.original_title || `ID ${movieId.value}`;
+  const confirmed = window.confirm(`确认删除「${name}」的本地数据吗？\n删除后不可恢复。`);
+  if (!confirmed) return;
+
+  deleting.value = true;
+  deleteError.value = "";
+  try {
+    await deleteMovie(movieId.value);
+    await router.push({
+      path: "/library",
+      query: { tab: "movie" },
+    });
+  } catch (err: any) {
+    deleteError.value = err.message ?? "删除失败";
+  } finally {
+    deleting.value = false;
+  }
+}
+
 async function checkRemoteDiffAndPrompt() {
   if (!movieId.value || checkingRemoteDiff.value || comparedRemoteId.value === movieId.value) {
+    return;
+  }
+  if (movieId.value < 0) {
+    remoteDiffNotice.value = null;
+    remoteDiffDecision.value = "keep_local";
+    remoteDiffError.value = "";
+    remoteDiffMessage.value = "本地新建条目不参与 TMDB 远程差异检测";
+    comparedRemoteId.value = movieId.value;
     return;
   }
   checkingRemoteDiff.value = true;
@@ -405,7 +440,7 @@ watch(movieId, () => {
             <span class="badge">⭐ {{ detail.vote_average?.toFixed(1) ?? "-" }}</span>
             <span class="badge">📅 {{ detail.release_date ?? "-" }}</span>
             <span v-if="detail.runtime" class="badge">⏱ {{ detail.runtime }} 分钟</span>
-            <span class="badge">{{ detail.status ?? "未知" }}</span>
+            <span class="badge">{{ formatStatusLabel(detail.status) }}</span>
           </div>
 
           <!-- 类型标签 -->
@@ -472,13 +507,22 @@ watch(movieId, () => {
           <div class="mt-6 rounded-xl border border-black/10 bg-white/70 p-4">
             <div class="flex items-center justify-between gap-3">
               <h3 class="text-sm font-semibold">本地信息编辑</h3>
-              <button
-                v-if="!isEditing"
-                class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-sand/50"
-                @click="enterEditMode"
-              >
-                编辑
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  class="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs text-red-700 hover:bg-red-100 disabled:opacity-60"
+                  :disabled="deleting || saving"
+                  @click="deleteCurrentMovie"
+                >
+                  {{ deleting ? "删除中..." : "删除本地数据" }}
+                </button>
+                <button
+                  v-if="!isEditing"
+                  class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-sand/50"
+                  @click="enterEditMode"
+                >
+                  编辑
+                </button>
+              </div>
             </div>
 
             <p v-if="!isEditing" class="mt-2 text-xs text-black/60">
@@ -541,11 +585,12 @@ watch(movieId, () => {
                 </label>
                 <label class="text-xs text-black/60">
                   状态
-                  <input
+                  <select
                     v-model="editForm.status"
                     class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
-                    placeholder="Released"
-                  />
+                  >
+                    <option v-for="status in movieStatusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
+                  </select>
                 </label>
                 <label class="text-xs text-black/60">
                   标语
@@ -643,6 +688,7 @@ watch(movieId, () => {
             <div class="mt-2">
               <span v-if="saveMessage" class="text-xs text-green-700">{{ saveMessage }}</span>
               <span v-if="saveError" class="text-xs text-red-600">{{ saveError }}</span>
+              <span v-if="deleteError" class="ml-2 text-xs text-red-600">{{ deleteError }}</span>
             </div>
           </div>
 

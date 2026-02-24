@@ -453,3 +453,98 @@ func mapBool(data map[string]interface{}, key string) bool {
 	}
 	return v
 }
+
+func genreNamesFromRaw(raw model.RawJSON) []string {
+	if len(raw) == 0 {
+		return []string{}
+	}
+
+	payload := make(map[string]interface{})
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return []string{}
+	}
+
+	return extractGenreNamesFromMap(payload)
+}
+
+func extractGenreNamesFromMap(payload map[string]interface{}) []string {
+	result := make([]string, 0)
+	seen := make(map[string]struct{})
+
+	appendName := func(raw string) {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			return
+		}
+		key := strings.ToLower(name)
+		if _, exists := seen[key]; exists {
+			return
+		}
+		seen[key] = struct{}{}
+		result = append(result, name)
+	}
+
+	if genres, ok := payload["genres"].([]interface{}); ok {
+		for _, item := range genres {
+			switch v := item.(type) {
+			case map[string]interface{}:
+				appendName(mapString(v, "name"))
+			case string:
+				appendName(v)
+			}
+		}
+	}
+
+	if names, ok := payload["genre_names"].([]interface{}); ok {
+		for _, item := range names {
+			if v, ok := item.(string); ok {
+				appendName(v)
+			}
+		}
+	}
+
+	return result
+}
+
+func mergeGenreNames(primary []string, fallback []string) []string {
+	if len(primary) == 0 {
+		return fallback
+	}
+	if len(fallback) == 0 {
+		return primary
+	}
+
+	result := make([]string, 0, len(primary)+len(fallback))
+	seen := make(map[string]struct{}, len(primary)+len(fallback))
+	appendName := func(raw string) {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			return
+		}
+		key := strings.ToLower(name)
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
+		result = append(result, name)
+	}
+
+	for _, item := range primary {
+		appendName(item)
+	}
+	for _, item := range fallback {
+		appendName(item)
+	}
+	return result
+}
+
+func nextLocalTmdbID(db *gorm.DB, modelValue interface{}) (int, error) {
+	var minID int
+	if err := db.Model(modelValue).Select("COALESCE(MIN(tmdb_id), 0)").Where("tmdb_id < 0").Scan(&minID).Error; err != nil {
+		return 0, err
+	}
+	if minID >= 0 {
+		return -1, nil
+	}
+	return minID - 1, nil
+}

@@ -8,6 +8,14 @@ const PLACEHOLDER_PROFILE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 export type ImageSize =
   | "w92" | "w154" | "w185" | "w342" | "w500" | "w780" | "original";
 
+function isDirectImagePath(path: string): boolean {
+  return path.startsWith("http://")
+    || path.startsWith("https://")
+    || path.startsWith("data:")
+    || path.startsWith("blob:")
+    || path.startsWith("/uploads/");
+}
+
 /**
  * 生成 TMDB 图片完整 URL
  * @param path   poster_path / backdrop_path / profile_path
@@ -15,6 +23,7 @@ export type ImageSize =
  */
 export function tmdbImg(path: string | null | undefined, size: ImageSize = "w342"): string {
   if (!path) return PLACEHOLDER_POSTER;
+  if (isDirectImagePath(path)) return path;
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
 
@@ -23,5 +32,6 @@ export function tmdbImg(path: string | null | undefined, size: ImageSize = "w342
  */
 export function profileImg(path: string | null | undefined, size: ImageSize = "w185"): string {
   if (!path) return PLACEHOLDER_PROFILE;
+  if (isDirectImagePath(path)) return path;
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }

@@ -43,7 +43,11 @@ func main() {
 	// 注册 Admin 路由
 	server.AddRoutes(
 		[]rest.Route{
+			{Method: http.MethodPost, Path: "/movie", Handler: admin.CreateMovieHandler(ctx)},
+			{Method: http.MethodDelete, Path: "/movie/:id", Handler: admin.DeleteMovieHandler(ctx)},
 			{Method: http.MethodPut, Path: "/movie/:id", Handler: admin.UpdateMovieHandler(ctx)},
+			{Method: http.MethodPost, Path: "/tv", Handler: admin.CreateTvSeriesHandler(ctx)},
+			{Method: http.MethodDelete, Path: "/tv/:id", Handler: admin.DeleteTvSeriesHandler(ctx)},
 			{Method: http.MethodPut, Path: "/tv/:id", Handler: admin.UpdateTvSeriesHandler(ctx)},
 			{Method: http.MethodPut, Path: "/person/:id", Handler: admin.UpdatePersonHandler(ctx)},
 			{Method: http.MethodGet, Path: "/compare/movie/:id", Handler: admin.CompareMovieRemoteHandler(ctx)},
@@ -59,8 +63,16 @@ func main() {
 			{Method: http.MethodGet, Path: "/tv", Handler: admin.ListTvSeriesHandler(ctx)},
 			{Method: http.MethodGet, Path: "/proxy", Handler: admin.GetProxySettingsHandler(ctx)},
 			{Method: http.MethodPut, Path: "/proxy", Handler: admin.UpdateProxySettingsHandler(ctx)},
+			{Method: http.MethodPost, Path: "/upload/image", Handler: admin.UploadImageHandler(ctx)},
 		},
 		rest.WithPrefix("/api/admin"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{Method: http.MethodGet, Path: "/:filename", Handler: admin.GetUploadedFileHandler(ctx)},
+		},
+		rest.WithPrefix("/uploads"),
 	)
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)

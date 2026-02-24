@@ -32,6 +32,52 @@ export type AdminCompareResp = {
   message: string;
 };
 
+export type AdminCreateResp = {
+  tmdb_id: number;
+  is_local: boolean;
+  message: string;
+};
+
+export type AdminCreateMoviePayload = {
+  title: string;
+  original_title?: string;
+  genre_names?: string[];
+  tagline?: string;
+  release_date?: string;
+  status?: string;
+  runtime?: number;
+  original_language?: string;
+  homepage?: string;
+  poster_path?: string;
+  backdrop_path?: string;
+  vote_average?: number;
+  popularity?: number;
+  overview?: string;
+};
+
+export type AdminCreateTVPayload = {
+  name: string;
+  original_name?: string;
+  genre_names?: string[];
+  type?: string;
+  tagline?: string;
+  first_air_date?: string;
+  status?: string;
+  number_of_seasons?: number;
+  number_of_episodes?: number;
+  original_language?: string;
+  homepage?: string;
+  poster_path?: string;
+  backdrop_path?: string;
+  vote_average?: number;
+  popularity?: number;
+  overview?: string;
+};
+
+export type AdminUploadResp = {
+  path: string;
+};
+
 export function getStats() {
   return http.get("/api/admin/stats");
 }
@@ -64,6 +110,14 @@ export function updateMovie(id: number, payload: Record<string, unknown>) {
   return http.put(`/api/admin/movie/${id}`, payload);
 }
 
+export function createMovie(payload: AdminCreateMoviePayload) {
+  return http.post<AdminCreateResp>("/api/admin/movie", payload);
+}
+
+export function deleteMovie(id: number) {
+  return http.delete(`/api/admin/movie/${id}`);
+}
+
 export function updateTV(id: number, payload: Record<string, unknown>) {
   return http.put(`/api/admin/tv/${id}`, payload).catch((err: any) => {
     if (String(err?.message ?? "").includes("404")) {
@@ -88,6 +142,14 @@ export function listTV(page = 1, pageSize = 20, keyword = "", searchMode = "cont
     });
 }
 
+export function createTV(payload: AdminCreateTVPayload) {
+  return http.post<AdminCreateResp>("/api/admin/tv", payload);
+}
+
+export function deleteTV(id: number) {
+  return http.delete(`/api/admin/tv/${id}`);
+}
+
 export function listPeople(page = 1, pageSize = 20) {
   return http.get("/api/admin/people", { params: { page, page_size: pageSize } });
 }
@@ -98,4 +160,14 @@ export function getProxySettings() {
 
 export function updateProxySettings(payload: AdminProxyPayload) {
   return http.put<AdminProxyResp>("/api/admin/proxy", payload);
+}
+
+export function uploadAdminImage(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return http.post<AdminUploadResp>("/api/admin/upload/image", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 }
