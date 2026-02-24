@@ -370,7 +370,7 @@ onMounted(reloadAll);
       <p v-if="loading" class="mt-4 text-sm text-black/55">加载中...</p>
       <div v-else class="mt-3">
         <button
-          class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
+          class="btn-soft disabled:opacity-60"
           :disabled="proxySaving || syncSaving || syncTriggering || logsLoading || logsClearing"
           @click="reloadAll"
         >
@@ -393,7 +393,7 @@ onMounted(reloadAll);
         <input
           v-model="proxyURL"
           type="text"
-          class="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
+          class="field-control mt-1 w-full text-sm"
           :disabled="!proxyEnabled || proxySaving"
           placeholder="http://127.0.0.1:7890"
         />
@@ -402,7 +402,7 @@ onMounted(reloadAll);
 
       <div class="mt-4 flex items-center gap-3">
         <button
-          class="rounded-xl bg-pine px-4 py-2 text-sm font-medium text-white hover:bg-pine/90 disabled:opacity-60"
+          class="btn-primary disabled:opacity-60"
           :disabled="proxySaving"
           @click="saveProxySettings"
         >
@@ -428,7 +428,7 @@ onMounted(reloadAll);
         <input
           v-model="syncCronExpr"
           type="text"
-          class="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
+          class="field-control mt-1 w-full text-sm"
           :disabled="syncSaving"
           placeholder="*/30 * * * *"
         />
@@ -439,7 +439,7 @@ onMounted(reloadAll);
         同步策略
         <select
           v-model="syncMode"
-          class="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
+          class="field-control mt-1 w-full text-sm"
           :disabled="syncSaving"
         >
           <option
@@ -460,7 +460,7 @@ onMounted(reloadAll);
           type="number"
           min="1"
           max="500"
-          class="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
+          class="field-control mt-1 w-full text-sm"
           :disabled="syncSaving"
         />
       </label>
@@ -472,21 +472,21 @@ onMounted(reloadAll);
           type="number"
           min="0"
           max="3600"
-          class="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
+          class="field-control mt-1 w-full text-sm"
           :disabled="syncSaving"
         />
       </label>
 
       <div class="mt-4 flex items-center gap-3">
         <button
-          class="rounded-xl bg-pine px-4 py-2 text-sm font-medium text-white hover:bg-pine/90 disabled:opacity-60"
+          class="btn-primary disabled:opacity-60"
           :disabled="syncSaving || syncTriggering"
           @click="saveAutoSyncSettings"
         >
           {{ syncSaving ? "保存中..." : "保存定时同步设置" }}
         </button>
         <button
-          class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
+          class="btn-soft disabled:opacity-60"
           :disabled="syncSaving || syncTriggering"
           @click="triggerAutoSyncNow"
         >
@@ -509,7 +509,7 @@ onMounted(reloadAll);
             状态
             <select
               v-model="logsStatus"
-              class="ml-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
+              class="field-control ml-2 text-sm"
               :disabled="logsLoading || logsClearing"
               @change="applyLogStatusFilter"
             >
@@ -524,7 +524,7 @@ onMounted(reloadAll);
           </label>
 
           <button
-            class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
+            class="btn-soft disabled:opacity-60"
             :disabled="logsLoading || logsClearing"
             @click="refreshLogs"
           >
@@ -543,9 +543,9 @@ onMounted(reloadAll);
       <p v-if="logsMessage" class="mt-3 text-sm text-green-700">{{ logsMessage }}</p>
       <p v-if="logsError" class="mt-3 text-sm text-red-600">{{ logsError }}</p>
 
-      <div class="mt-4 overflow-x-auto rounded-xl border border-black/10 bg-white">
+      <div class="table-shell mt-4">
         <table class="min-w-full text-sm">
-          <thead class="bg-black/5 text-left text-black/70">
+          <thead class="table-head text-left text-black/70">
             <tr>
               <th class="px-3 py-2 font-medium">触发时间</th>
               <th class="px-3 py-2 font-medium">策略</th>
@@ -582,7 +582,7 @@ onMounted(reloadAll);
               <td class="px-3 py-2 text-black/70">{{ summarizeMessage(item.message) }}</td>
               <td class="px-3 py-2">
                 <button
-                  class="rounded-lg border border-black/10 bg-white px-2.5 py-1 text-xs hover:bg-sand/50"
+                  class="btn-soft-xs px-2.5 py-1"
                   @click="openLogDetail(item)"
                 >
                   详情
@@ -603,14 +603,14 @@ onMounted(reloadAll);
         <p>共 {{ logsTotal }} 条，当前第 {{ logsPage }} / {{ logsTotalPages() }} 页</p>
         <div class="flex items-center gap-2">
           <button
-            class="rounded-xl border border-black/10 bg-white px-3 py-1.5 hover:bg-sand/50 disabled:opacity-60"
+            class="btn-soft px-3 py-1.5 disabled:opacity-60"
             :disabled="logsLoading || logsPage <= 1"
             @click="goToLogsPage(logsPage - 1)"
           >
             上一页
           </button>
           <button
-            class="rounded-xl border border-black/10 bg-white px-3 py-1.5 hover:bg-sand/50 disabled:opacity-60"
+            class="btn-soft px-3 py-1.5 disabled:opacity-60"
             :disabled="logsLoading || logsPage >= logsTotalPages()"
             @click="goToLogsPage(logsPage + 1)"
           >
@@ -622,14 +622,14 @@ onMounted(reloadAll);
     </div>
 
     <div v-if="detailModalVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" @click.self="closeLogDetail">
-      <div class="max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-xl">
-        <div class="flex items-center justify-between border-b border-black/10 px-5 py-3">
+      <div class="panel-glass max-h-[90vh] w-full max-w-6xl overflow-hidden rounded-2xl">
+        <div class="flex items-center justify-between border-b border-white/60 px-5 py-3">
           <h4 class="text-base font-semibold">
             执行日志明细
             <span v-if="activeLogDetail" class="text-sm text-black/55">#{{ activeLogDetail.id }}</span>
           </h4>
           <button
-            class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm hover:bg-sand/50"
+            class="btn-soft px-3 py-1.5"
             @click="closeLogDetail"
           >
             关闭
@@ -654,9 +654,9 @@ onMounted(reloadAll);
 
             <div class="mt-4">
               <h5 class="text-sm font-semibold text-green-700">同步成功项（{{ activeLogDetail.synced_list.length }}）</h5>
-              <div class="mt-2 overflow-x-auto rounded-xl border border-black/10">
+              <div class="table-shell mt-2">
                 <table class="min-w-full text-sm">
-                  <thead class="bg-black/5 text-left text-black/70">
+                  <thead class="table-head text-left text-black/70">
                     <tr>
                       <th class="px-3 py-2 font-medium">类型</th>
                       <th class="px-3 py-2 font-medium">名称</th>
@@ -695,9 +695,9 @@ onMounted(reloadAll);
 
             <div class="mt-4">
               <h5 class="text-sm font-semibold text-red-700">同步失败项（{{ activeLogDetail.failed_list.length }}）</h5>
-              <div class="mt-2 overflow-x-auto rounded-xl border border-black/10">
+              <div class="table-shell mt-2">
                 <table class="min-w-full text-sm">
-                  <thead class="bg-black/5 text-left text-black/70">
+                  <thead class="table-head text-left text-black/70">
                     <tr>
                       <th class="px-3 py-2 font-medium">类型</th>
                       <th class="px-3 py-2 font-medium">名称</th>
@@ -729,7 +729,7 @@ onMounted(reloadAll);
     </div>
 
     <div v-if="clearLogsConfirmVisible" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/45 p-4" @click.self="closeClearLogsConfirm">
-      <div class="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+      <div class="panel-glass w-full max-w-md rounded-2xl p-5">
         <h4 class="text-base font-semibold text-red-700">确认清空执行日志</h4>
         <p class="mt-2 text-sm text-black/70">
           确认要清空所有执行日志吗？清空后无法恢复。
@@ -737,14 +737,14 @@ onMounted(reloadAll);
 
         <div class="mt-5 flex items-center justify-end gap-2">
           <button
-            class="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
+            class="btn-soft disabled:opacity-60"
             :disabled="logsClearing"
             @click="closeClearLogsConfirm"
           >
             取消
           </button>
           <button
-            class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 hover:bg-red-100 disabled:opacity-60"
+            class="btn-danger-soft disabled:opacity-60"
             :disabled="logsClearing"
             @click="clearLogs"
           >

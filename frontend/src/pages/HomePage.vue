@@ -41,17 +41,17 @@ onMounted(loadData);
       <p class="mt-2 max-w-xl text-sm text-white/80 line-clamp-2">{{ movies[0]?.overview }}</p>
       <RouterLink
         :to="`/movie/${movies[0]?.id}`"
-        class="mt-3 inline-block rounded-full bg-coral px-5 py-2 text-sm font-medium text-white hover:bg-coral/90"
+        class="btn-primary mt-3 inline-flex w-auto self-start items-center whitespace-nowrap rounded-full !px-2.5 !py-1 text-xs"
       >
-        查看详情
+        详情
       </RouterLink>
     </div>
   </section>
 
   <section class="mt-4 flex items-center justify-between">
-    <p class="text-xs uppercase tracking-[0.25em] text-pine/80">今日看点</p>
+    <p class="section-label">今日看点</p>
     <button
-      class="rounded-xl bg-pine px-4 py-2 text-sm font-medium text-white hover:bg-pine/90"
+      class="btn-primary"
       :disabled="loading"
       @click="loadData"
     >
@@ -62,7 +62,7 @@ onMounted(loadData);
 
   <!-- 热门电影 -->
   <section class="mt-6">
-    <h3 class="mb-3 text-base font-semibold">🎬 热门电影</h3>
+    <h3 class="section-title">热门电影</h3>
     <div class="poster-grid">
       <RouterLink
         v-for="item in movies.slice(0, 10)"
@@ -89,7 +89,7 @@ onMounted(loadData);
 
   <!-- 热门剧集 -->
   <section class="mt-8">
-    <h3 class="mb-3 text-base font-semibold">📺 热门剧集</h3>
+    <h3 class="section-title">热门剧集</h3>
     <div class="poster-grid">
       <RouterLink
         v-for="item in tvSeries.slice(0, 10)"

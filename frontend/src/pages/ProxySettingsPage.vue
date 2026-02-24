@@ -70,7 +70,7 @@ onMounted(loadSettings);
         <input
           v-model="proxyURL"
           type="text"
-          class="mt-1 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm"
+          class="field-control mt-1 w-full text-sm"
           :disabled="!enabled || saving"
           placeholder="http://127.0.0.1:7890"
         />
@@ -82,14 +82,14 @@ onMounted(loadSettings);
 
       <div class="mt-4 flex items-center gap-3">
         <button
-          class="rounded-xl bg-pine px-4 py-2 text-sm font-medium text-white hover:bg-pine/90 disabled:opacity-60"
+          class="btn-primary disabled:opacity-60"
           :disabled="saving"
           @click="saveSettings"
         >
           {{ saving ? "保存中..." : "保存设置" }}
         </button>
         <button
-          class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
+          class="btn-soft disabled:opacity-60"
           :disabled="saving"
           @click="loadSettings"
         >

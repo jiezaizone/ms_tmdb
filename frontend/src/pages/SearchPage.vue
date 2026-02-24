@@ -55,9 +55,9 @@ function subtitleByItem(item: any) {
 
 <template>
   <section class="card">
-    <h2 class="mb-4 text-lg font-semibold">全站搜索</h2>
+    <h2 class="mb-4 text-lg font-semibold text-slate-800">全站搜索</h2>
     <div class="grid gap-3 md:grid-cols-[140px_1fr_auto]">
-      <select v-model="type" class="rounded-xl border border-black/10 bg-white px-3 py-2">
+      <select v-model="type" class="field-control">
         <option value="multi">综合</option>
         <option value="movie">电影</option>
         <option value="tv">剧集</option>
@@ -66,12 +66,12 @@ function subtitleByItem(item: any) {
       <input
         v-model="query"
         type="text"
-        class="rounded-xl border border-black/10 bg-white px-3 py-2"
+        class="field-control"
         placeholder="输入关键词，例如：Fight Club"
         @keyup.enter="handleSearch"
       />
       <button
-        class="rounded-xl bg-coral px-4 py-2 font-medium text-white hover:bg-coral/90"
+        class="btn-primary"
         @click="handleSearch"
       >
         {{ loading ? "搜索中..." : "搜索" }}
@@ -81,7 +81,7 @@ function subtitleByItem(item: any) {
   </section>
 
   <section v-if="results.length" class="card mt-4">
-    <h3 class="mb-3 text-base font-semibold">结果（{{ results.length }}）</h3>
+    <h3 class="section-title">结果（{{ results.length }}）</h3>
     <ul class="space-y-2">
       <li v-for="item in results.slice(0, 20)" :key="item.id" class="search-item">
         <RouterLink :to="routeByItem(item)" class="flex items-center gap-3">
@@ -92,7 +92,7 @@ function subtitleByItem(item: any) {
             loading="lazy"
           />
           <div class="min-w-0 flex-1">
-            <p class="truncate font-medium text-pine">{{ titleByItem(item) }}</p>
+            <p class="truncate font-medium text-slate-800">{{ titleByItem(item) }}</p>
             <p class="text-xs text-black/55">{{ subtitleByItem(item) }}</p>
             <p v-if="item.overview" class="mt-0.5 text-xs text-black/50 line-clamp-1">
               {{ item.overview }}

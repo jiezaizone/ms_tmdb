@@ -493,39 +493,39 @@ onMounted(loadData);
 
 <template>
   <section class="flex flex-wrap items-center gap-2">
-    <div class="flex items-center gap-2 rounded-full bg-white/70 p-1 shadow-soft">
+    <div class="glass-pill gap-2">
       <button
         v-for="tab in ([
           { key: 'movie', label: '🎬 电影' },
           { key: 'tv', label: '📺 剧集' },
         ] as const)"
         :key="tab.key"
-        class="rounded-full px-5 py-2 text-sm transition"
-        :class="activeTab === tab.key ? 'bg-pine text-white' : 'text-ink hover:bg-sand/70'"
+        class="glass-pill-btn px-5"
+        :class="activeTab === tab.key ? 'glass-pill-btn-active' : ''"
         @click="switchTab(tab.key as MediaTab)"
       >
         {{ tab.label }}
       </button>
     </div>
 
-    <div class="flex items-center gap-1 rounded-full bg-white/70 p-1 shadow-soft">
+    <div class="glass-pill">
       <button
-        class="rounded-full px-4 py-1.5 text-xs transition"
-        :class="viewMode === 'grid' ? 'bg-coral text-white' : 'text-ink hover:bg-sand/70'"
+        class="glass-pill-btn px-4 py-1.5 text-xs"
+        :class="viewMode === 'grid' ? 'glass-pill-btn-active' : ''"
         @click="viewMode = 'grid'"
       >
         卡片
       </button>
       <button
-        class="rounded-full px-4 py-1.5 text-xs transition"
-        :class="viewMode === 'table' ? 'bg-coral text-white' : 'text-ink hover:bg-sand/70'"
+        class="glass-pill-btn px-4 py-1.5 text-xs"
+        :class="viewMode === 'table' ? 'glass-pill-btn-active' : ''"
         @click="viewMode = 'table'"
       >
         表格
       </button>
     </div>
 
-    <button class="rounded-lg bg-pine px-4 py-2 text-sm text-white hover:bg-pine/90" @click="openCreatePanel">
+    <button class="btn-primary" @click="openCreatePanel">
       {{ createTitle }}
     </button>
   </section>
@@ -534,21 +534,21 @@ onMounted(loadData);
     <div class="grid gap-3 md:grid-cols-[1fr_auto_auto_auto] md:items-center">
       <input
         v-model="keywordInput"
-        class="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+        class="w-full field-control text-sm"
         placeholder="输入片名/剧名关键词"
         @keyup.enter="applySearch"
       />
       <select
         v-model="searchMode"
-        class="rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+        class="field-control text-sm"
       >
         <option value="contains">模糊包含</option>
         <option value="prefix">前缀匹配</option>
       </select>
-      <button class="rounded-lg bg-pine px-4 py-2 text-sm text-white hover:bg-pine/90" @click="applySearch">
+      <button class="btn-primary" @click="applySearch">
         搜索
       </button>
-      <button class="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50" @click="resetSearch">
+      <button class="btn-soft" @click="resetSearch">
         重置
       </button>
     </div>
@@ -556,10 +556,10 @@ onMounted(loadData);
 
   <div v-if="createPanelVisible" class="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-6">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-[2px]" @click="closeCreatePanel" />
-    <section class="relative z-10 w-full max-w-5xl overflow-hidden rounded-2xl border border-black/10 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-      <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-black/10 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
+    <section class="panel-glass relative z-10 w-full max-w-5xl overflow-hidden rounded-2xl">
+      <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-white/60 bg-white/70 px-4 py-3 backdrop-blur sm:px-6">
         <h3 class="text-sm font-semibold">{{ createTitle }}</h3>
-        <button class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-sand/50" @click="closeCreatePanel">
+        <button class="btn-soft px-3 py-1.5 text-xs" @click="closeCreatePanel">
           关闭
         </button>
       </div>
@@ -568,35 +568,35 @@ onMounted(loadData);
     <div v-if="activeTab === 'movie'" class="grid gap-3 md:grid-cols-2">
       <label class="text-xs text-black/60">
         标题（必填）
-        <input v-model="movieCreateForm.title" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="电影标题" />
+        <input v-model="movieCreateForm.title" class="field-control mt-1 w-full text-sm" placeholder="电影标题" />
       </label>
       <label class="text-xs text-black/60">
         原始标题
-        <input v-model="movieCreateForm.original_title" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="Original Title" />
+        <input v-model="movieCreateForm.original_title" class="field-control mt-1 w-full text-sm" placeholder="Original Title" />
       </label>
       <label class="text-xs text-black/60">
         上映日期
-        <input v-model="movieCreateForm.release_date" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="YYYY-MM-DD" />
+        <input v-model="movieCreateForm.release_date" class="field-control mt-1 w-full text-sm" placeholder="YYYY-MM-DD" />
       </label>
       <label class="text-xs text-black/60">
         状态
-        <select v-model="movieCreateForm.status" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm">
+        <select v-model="movieCreateForm.status" class="field-control mt-1 w-full text-sm">
           <option v-for="status in movieStatusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
         </select>
       </label>
       <label class="text-xs text-black/60">
         原始语言
-        <select v-model="movieCreateForm.original_language" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm">
+        <select v-model="movieCreateForm.original_language" class="field-control mt-1 w-full text-sm">
           <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">{{ lang.label }}</option>
         </select>
       </label>
       <label class="text-xs text-black/60">
         时长（分钟）
-        <input v-model="movieCreateForm.runtime" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="120" />
+        <input v-model="movieCreateForm.runtime" class="field-control mt-1 w-full text-sm" placeholder="120" />
       </label>
       <label class="text-xs text-black/60 md:col-span-2">
         类型（多选）
-        <div class="mt-1 max-h-32 overflow-y-auto rounded-lg border border-black/10 bg-white p-2">
+        <div class="mt-1 max-h-32 overflow-y-auto rounded-lg border border-white/70 bg-white/55 p-2 backdrop-blur">
           <label v-for="genre in movieGenreOptions" :key="genre.id" class="mr-3 inline-flex items-center gap-1.5 py-1 text-xs">
             <input v-model="movieCreateForm.genre_names" type="checkbox" :value="genre.name" />
             <span>{{ genre.name }}</span>
@@ -606,72 +606,72 @@ onMounted(loadData);
       </label>
       <label class="text-xs text-black/60">
         海报路径
-        <input v-model="movieCreateForm.poster_path" readonly class="mt-1 w-full rounded-lg border border-black/10 bg-sand/30 px-3 py-2 text-sm" placeholder="上传后自动填充" />
+        <input v-model="movieCreateForm.poster_path" readonly class="field-control mt-1 w-full text-sm opacity-80" placeholder="上传后自动填充" />
         <input class="mt-2 block w-full text-xs" type="file" accept="image/*" @change="(e) => uploadCreateImage('movie', 'poster_path', e)" />
         <span v-if="uploadingKey === 'movie_poster_path'" class="mt-1 inline-block text-[11px] text-black/50">上传中...</span>
       </label>
       <label class="text-xs text-black/60">
         背景图路径
-        <input v-model="movieCreateForm.backdrop_path" readonly class="mt-1 w-full rounded-lg border border-black/10 bg-sand/30 px-3 py-2 text-sm" placeholder="上传后自动填充" />
+        <input v-model="movieCreateForm.backdrop_path" readonly class="field-control mt-1 w-full text-sm opacity-80" placeholder="上传后自动填充" />
         <input class="mt-2 block w-full text-xs" type="file" accept="image/*" @change="(e) => uploadCreateImage('movie', 'backdrop_path', e)" />
         <span v-if="uploadingKey === 'movie_backdrop_path'" class="mt-1 inline-block text-[11px] text-black/50">上传中...</span>
       </label>
       <label class="text-xs text-black/60">
         评分
-        <input v-model="movieCreateForm.vote_average" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="7.8" />
+        <input v-model="movieCreateForm.vote_average" class="field-control mt-1 w-full text-sm" placeholder="7.8" />
       </label>
       <label class="text-xs text-black/60">
         热度
-        <input v-model="movieCreateForm.popularity" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="123.4" />
+        <input v-model="movieCreateForm.popularity" class="field-control mt-1 w-full text-sm" placeholder="123.4" />
       </label>
       <label class="text-xs text-black/60 md:col-span-2">
         简介
-        <textarea v-model="movieCreateForm.overview" rows="3" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="简介" />
+        <textarea v-model="movieCreateForm.overview" rows="3" class="field-control mt-1 w-full text-sm" placeholder="简介" />
       </label>
     </div>
 
     <div v-else class="grid gap-3 md:grid-cols-2">
       <label class="text-xs text-black/60">
         剧名（必填）
-        <input v-model="tvCreateForm.name" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="剧集名称" />
+        <input v-model="tvCreateForm.name" class="field-control mt-1 w-full text-sm" placeholder="剧集名称" />
       </label>
       <label class="text-xs text-black/60">
         原始剧名
-        <input v-model="tvCreateForm.original_name" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="Original Name" />
+        <input v-model="tvCreateForm.original_name" class="field-control mt-1 w-full text-sm" placeholder="Original Name" />
       </label>
       <label class="text-xs text-black/60">
         首播日期
-        <input v-model="tvCreateForm.first_air_date" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="YYYY-MM-DD" />
+        <input v-model="tvCreateForm.first_air_date" class="field-control mt-1 w-full text-sm" placeholder="YYYY-MM-DD" />
       </label>
       <label class="text-xs text-black/60">
         状态
-        <select v-model="tvCreateForm.status" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm">
+        <select v-model="tvCreateForm.status" class="field-control mt-1 w-full text-sm">
           <option v-for="status in tvStatusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
         </select>
       </label>
       <label class="text-xs text-black/60">
         原始语言
-        <select v-model="tvCreateForm.original_language" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm">
+        <select v-model="tvCreateForm.original_language" class="field-control mt-1 w-full text-sm">
           <option v-for="lang in languageOptions" :key="lang.value" :value="lang.value">{{ lang.label }}</option>
         </select>
       </label>
       <label class="text-xs text-black/60">
         剧集类型
-        <select v-model="tvCreateForm.type" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm">
+        <select v-model="tvCreateForm.type" class="field-control mt-1 w-full text-sm">
           <option v-for="item in tvTypeOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
         </select>
       </label>
       <label class="text-xs text-black/60">
         季数
-        <input v-model="tvCreateForm.number_of_seasons" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="3" />
+        <input v-model="tvCreateForm.number_of_seasons" class="field-control mt-1 w-full text-sm" placeholder="3" />
       </label>
       <label class="text-xs text-black/60">
         集数
-        <input v-model="tvCreateForm.number_of_episodes" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="24" />
+        <input v-model="tvCreateForm.number_of_episodes" class="field-control mt-1 w-full text-sm" placeholder="24" />
       </label>
       <label class="text-xs text-black/60 md:col-span-2">
         类型（多选）
-        <div class="mt-1 max-h-32 overflow-y-auto rounded-lg border border-black/10 bg-white p-2">
+        <div class="mt-1 max-h-32 overflow-y-auto rounded-lg border border-white/70 bg-white/55 p-2 backdrop-blur">
           <label v-for="genre in tvGenreOptions" :key="genre.id" class="mr-3 inline-flex items-center gap-1.5 py-1 text-xs">
             <input v-model="tvCreateForm.genre_names" type="checkbox" :value="genre.name" />
             <span>{{ genre.name }}</span>
@@ -681,32 +681,32 @@ onMounted(loadData);
       </label>
       <label class="text-xs text-black/60">
         海报路径
-        <input v-model="tvCreateForm.poster_path" readonly class="mt-1 w-full rounded-lg border border-black/10 bg-sand/30 px-3 py-2 text-sm" placeholder="上传后自动填充" />
+        <input v-model="tvCreateForm.poster_path" readonly class="field-control mt-1 w-full text-sm opacity-80" placeholder="上传后自动填充" />
         <input class="mt-2 block w-full text-xs" type="file" accept="image/*" @change="(e) => uploadCreateImage('tv', 'poster_path', e)" />
         <span v-if="uploadingKey === 'tv_poster_path'" class="mt-1 inline-block text-[11px] text-black/50">上传中...</span>
       </label>
       <label class="text-xs text-black/60">
         背景图路径
-        <input v-model="tvCreateForm.backdrop_path" readonly class="mt-1 w-full rounded-lg border border-black/10 bg-sand/30 px-3 py-2 text-sm" placeholder="上传后自动填充" />
+        <input v-model="tvCreateForm.backdrop_path" readonly class="field-control mt-1 w-full text-sm opacity-80" placeholder="上传后自动填充" />
         <input class="mt-2 block w-full text-xs" type="file" accept="image/*" @change="(e) => uploadCreateImage('tv', 'backdrop_path', e)" />
         <span v-if="uploadingKey === 'tv_backdrop_path'" class="mt-1 inline-block text-[11px] text-black/50">上传中...</span>
       </label>
       <label class="text-xs text-black/60">
         评分
-        <input v-model="tvCreateForm.vote_average" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="8.1" />
+        <input v-model="tvCreateForm.vote_average" class="field-control mt-1 w-full text-sm" placeholder="8.1" />
       </label>
       <label class="text-xs text-black/60">
         热度
-        <input v-model="tvCreateForm.popularity" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="220.5" />
+        <input v-model="tvCreateForm.popularity" class="field-control mt-1 w-full text-sm" placeholder="220.5" />
       </label>
       <label class="text-xs text-black/60 md:col-span-2">
         简介
-        <textarea v-model="tvCreateForm.overview" rows="3" class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm" placeholder="简介" />
+        <textarea v-model="tvCreateForm.overview" rows="3" class="field-control mt-1 w-full text-sm" placeholder="简介" />
       </label>
     </div>
 
       <div class="mt-4 flex items-center gap-3">
-        <button class="rounded-lg bg-coral px-4 py-2 text-sm font-medium text-white hover:bg-coral/90 disabled:opacity-60" :disabled="creating || uploadingKey !== ''" @click="submitCreate">
+        <button class="btn-primary disabled:opacity-60" :disabled="creating || uploadingKey !== ''" @click="submitCreate">
           {{ creating ? "创建中..." : "创建并进入详情" }}
         </button>
         <span v-if="createError" class="text-xs text-red-600">{{ createError }}</span>
@@ -717,7 +717,7 @@ onMounted(loadData);
 
   <div v-if="deleteModalVisible" class="fixed inset-0 z-[1100] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/65 backdrop-blur-[2px]" @click="closeDeleteModal" />
-    <section class="relative z-10 w-full max-w-md rounded-2xl border border-black/10 bg-white p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+    <section class="panel-glass relative z-10 w-full max-w-md rounded-2xl p-5">
       <h3 class="text-base font-semibold text-ink">确认删除</h3>
       <p class="mt-2 text-sm text-black/70">
         将删除本地数据：
@@ -726,14 +726,14 @@ onMounted(loadData);
       <p class="mt-1 text-xs text-black/55">删除后不可恢复。</p>
       <div class="mt-5 flex justify-end gap-2">
         <button
-          class="rounded-lg border border-black/15 bg-white px-4 py-2 text-sm hover:bg-sand/40"
+          class="btn-soft"
           :disabled="deletingId !== null"
           @click="closeDeleteModal"
         >
           取消
         </button>
         <button
-          class="rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-60"
+          class="btn-danger-soft disabled:opacity-60"
           :disabled="deletingId !== null"
           @click="confirmDeleteItem"
         >
@@ -786,10 +786,10 @@ onMounted(loadData);
               ⭐ {{ (item.vote_average ?? 0).toFixed(1) }}
               <span class="ml-1">{{ (item.release_date || item.first_air_date || "").slice(0, 4) }}</span>
             </p>
-            <span v-if="item.tmdb_id < 0" class="mt-1 inline-block rounded bg-pine/20 px-1.5 py-0.5 text-[10px] text-pine">
+            <span v-if="item.tmdb_id < 0" class="chip-local-new mt-1 text-[10px]">
               本地新建
             </span>
-            <span v-else-if="item.is_modified" class="mt-1 inline-block rounded bg-coral/20 px-1.5 py-0.5 text-[10px] text-coral">
+            <span v-else-if="item.is_modified" class="chip-modified mt-1 text-[10px]">
               已修改
             </span>
           </div>
@@ -797,9 +797,9 @@ onMounted(loadData);
       </div>
     </section>
 
-    <section v-else class="card mt-4 overflow-x-auto p-0">
+    <section v-else class="table-shell">
       <table class="min-w-full text-left text-sm">
-        <thead class="bg-black/[0.04] text-xs uppercase tracking-wide text-black/60">
+        <thead class="table-head text-xs uppercase tracking-wide text-black/60">
           <tr>
             <th class="px-4 py-3">TMDB ID</th>
             <th class="px-4 py-3">名称</th>
@@ -831,13 +831,13 @@ onMounted(loadData);
             <td class="px-4 py-3">
               <span
                 v-if="item.tmdb_id < 0"
-                class="inline-block rounded bg-pine/20 px-2 py-0.5 text-[11px] text-pine"
+                class="chip-local-new"
               >
                 本地新建
               </span>
               <span
                 v-else-if="item.is_modified"
-                class="inline-block rounded bg-coral/20 px-2 py-0.5 text-[11px] text-coral"
+                class="chip-modified"
               >
                 已修改
               </span>
@@ -846,7 +846,7 @@ onMounted(loadData);
             <td class="px-4 py-3">
               <div class="flex items-center gap-3">
                 <button
-                  class="rounded-lg border border-pine/30 bg-pine/10 px-3 py-1 text-xs font-medium text-pine hover:bg-pine/20"
+                  class="btn-soft px-3 py-1 text-xs"
                   @click="openItemDetail(item)"
                 >
                   查看详情
@@ -871,7 +871,7 @@ onMounted(loadData);
 
     <section class="mt-6 flex items-center justify-center gap-2">
       <button
-        class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm hover:bg-sand/50 disabled:opacity-40"
+        class="btn-soft px-3 py-1.5 disabled:opacity-40"
         :disabled="page <= 1"
         @click="gotoPage(page - 1)"
       >
@@ -879,7 +879,7 @@ onMounted(loadData);
       </button>
       <span class="px-3 text-sm text-black/60">{{ page }} / {{ totalPages() }}</span>
       <button
-        class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm hover:bg-sand/50 disabled:opacity-40"
+        class="btn-soft px-3 py-1.5 disabled:opacity-40"
         :disabled="page >= totalPages()"
         @click="gotoPage(page + 1)"
       >

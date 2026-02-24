@@ -902,12 +902,12 @@ watch(tvId, () => {
             </p>
           </div>
 
-          <div class="mt-6 rounded-xl border border-black/10 bg-white/70 p-4">
+          <div class="panel-glass mt-6 rounded-xl p-4">
             <div class="flex items-center justify-between gap-3">
               <h3 class="text-sm font-semibold">本地信息编辑</h3>
               <div class="flex items-center gap-2">
                 <button
-                  class="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs text-red-700 hover:bg-red-100 disabled:opacity-60"
+                  class="btn-danger-soft-xs disabled:opacity-60"
                   :disabled="deleting || saving"
                   @click="deleteCurrentTV"
                 >
@@ -915,7 +915,7 @@ watch(tvId, () => {
                 </button>
                 <button
                   v-if="!isEditing"
-                  class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-sand/50"
+                  class="btn-soft-xs"
                   @click="enterEditMode"
                 >
                   编辑
@@ -933,7 +933,7 @@ watch(tvId, () => {
                   剧名
                   <input
                     v-model="editForm.name"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="剧集标题"
                   />
                 </label>
@@ -941,16 +941,16 @@ watch(tvId, () => {
                   原始剧名
                   <input
                     v-model="editForm.original_name"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="Original Name"
                   />
                 </label>
                 <label class="text-xs text-black/60 md:col-span-2">
                   类型（多选）
-                  <div class="mt-1 flex flex-wrap gap-2 rounded-lg border border-black/10 bg-white p-2">
+                  <div class="mt-1 flex flex-wrap gap-2 rounded-lg border border-white/70 bg-white/55 p-2 backdrop-blur">
                     <input
                       v-model="genreKeyword"
-                      class="w-full rounded-md border border-black/10 bg-sand/20 px-2.5 py-1.5 text-xs"
+                      class="field-control-xs w-full"
                       placeholder="筛选类型"
                     />
                     <label
@@ -977,7 +977,7 @@ watch(tvId, () => {
                   首播日期
                   <input
                     v-model="editForm.first_air_date"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="YYYY-MM-DD"
                   />
                 </label>
@@ -985,7 +985,7 @@ watch(tvId, () => {
                   状态
                   <select
                     v-model="editForm.status"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                   >
                     <option v-for="status in tvStatusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
                   </select>
@@ -994,7 +994,7 @@ watch(tvId, () => {
                   剧集类型
                   <select
                     v-model="editForm.type"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                   >
                     <option v-for="item in tvTypeOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
                   </select>
@@ -1003,7 +1003,7 @@ watch(tvId, () => {
                   季数
                   <input
                     v-model="editForm.number_of_seasons"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="Seasons"
                   />
                 </label>
@@ -1011,7 +1011,7 @@ watch(tvId, () => {
                   集数
                   <input
                     v-model="editForm.number_of_episodes"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="Episodes"
                   />
                 </label>
@@ -1019,7 +1019,7 @@ watch(tvId, () => {
                   原始语言
                   <input
                     v-model="editForm.original_language"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="zh / en"
                   />
                 </label>
@@ -1027,7 +1027,7 @@ watch(tvId, () => {
                   主页链接
                   <input
                     v-model="editForm.homepage"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="https://..."
                   />
                 </label>
@@ -1035,7 +1035,7 @@ watch(tvId, () => {
                   海报路径
                   <input
                     v-model="editForm.poster_path"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="/poster.jpg"
                   />
                 </label>
@@ -1043,7 +1043,7 @@ watch(tvId, () => {
                   背景图路径
                   <input
                     v-model="editForm.backdrop_path"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="/backdrop.jpg"
                   />
                 </label>
@@ -1051,7 +1051,7 @@ watch(tvId, () => {
                   评分
                   <input
                     v-model="editForm.vote_average"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="8.4"
                   />
                 </label>
@@ -1059,7 +1059,7 @@ watch(tvId, () => {
                   热度
                   <input
                     v-model="editForm.popularity"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="210.5"
                   />
                 </label>
@@ -1068,7 +1068,7 @@ watch(tvId, () => {
                   <textarea
                     v-model="editForm.overview"
                     rows="4"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="简介"
                   />
                 </label>
@@ -1076,14 +1076,14 @@ watch(tvId, () => {
 
               <div class="mt-3 flex items-center gap-3">
                 <button
-                  class="rounded-lg bg-coral px-4 py-2 text-sm font-medium text-white hover:bg-coral/90 disabled:opacity-60"
+                  class="btn-primary disabled:opacity-60"
                   :disabled="saving"
                   @click="saveTVChanges"
                 >
                   {{ saving ? "保存中..." : "保存到本地数据库" }}
                 </button>
                 <button
-                  class="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
+                  class="btn-soft disabled:opacity-60"
                   :disabled="saving"
                   @click="cancelEditMode"
                 >
@@ -1126,7 +1126,7 @@ watch(tvId, () => {
             </div>
           </div>
 
-          <div v-if="seasonOptions.length" class="mt-4 rounded-xl border border-black/10 bg-white/70 p-4">
+          <div v-if="seasonOptions.length" class="panel-glass mt-4 rounded-xl p-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h3 class="text-sm font-semibold">
                 {{ selectedSeasonDetail?.name || "分集明细" }}
@@ -1138,7 +1138,7 @@ watch(tvId, () => {
                 <button
                   v-if="!seasonLocalSaved"
                   type="button"
-                  class="rounded-lg border border-black/10 bg-white px-3 py-1 text-xs hover:bg-sand/50 disabled:opacity-60"
+                  class="btn-soft-xs px-3 py-1 disabled:opacity-60"
                   :disabled="seasonLocalSaving || seasonDetailLoading || !selectedSeasonDetail"
                   @click="saveSeasonToLocalFromTMDB"
                 >
@@ -1172,7 +1172,7 @@ watch(tvId, () => {
             <p v-else-if="seasonDetailError" class="mt-3 text-xs text-red-600">{{ seasonDetailError }}</p>
             <p
               v-else-if="!selectedSeasonEpisodes.length"
-              class="mt-3 rounded-lg border border-black/10 bg-white/70 px-3 py-2 text-xs text-black/55"
+              class="mt-3 rounded-lg border border-white/70 bg-white/55 px-3 py-2 text-xs text-black/55"
             >
               当前季暂无可展示的分集数据
             </p>
@@ -1181,7 +1181,7 @@ watch(tvId, () => {
               <article
                 v-for="ep in selectedSeasonEpisodes"
                 :key="ep.id || ep.episode_number"
-                class="rounded-xl border border-black/10 bg-white/80 p-3 md:flex md:gap-3"
+                class="rounded-xl border border-white/70 bg-white/62 p-3 backdrop-blur md:flex md:gap-3"
               >
                 <img
                   :src="tmdbImg(ep.still_path, 'w342')"
@@ -1201,7 +1201,7 @@ watch(tvId, () => {
                       标题
                       <input
                         v-model="editingEpisodeName"
-                        class="mt-1 w-full rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm"
+                        class="field-control mt-1 w-full px-2.5 py-1.5 text-sm"
                         placeholder="请输入本集标题"
                       />
                     </label>
@@ -1210,14 +1210,14 @@ watch(tvId, () => {
                       <textarea
                         v-model="editingEpisodeOverview"
                         rows="3"
-                        class="mt-1 w-full rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-sm"
+                        class="field-control mt-1 w-full px-2.5 py-1.5 text-sm"
                         placeholder="请输入本集简介"
                       />
                     </label>
                     <div class="mt-2 flex items-center gap-2">
                       <button
                         type="button"
-                        class="rounded-lg bg-coral px-3 py-1.5 text-xs font-medium text-white hover:bg-coral/90 disabled:opacity-60"
+                        class="btn-primary-xs disabled:opacity-60"
                         :disabled="seasonLocalSaving"
                         @click="saveEpisodeEdit"
                       >
@@ -1225,7 +1225,7 @@ watch(tvId, () => {
                       </button>
                       <button
                         type="button"
-                        class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-sand/50 disabled:opacity-60"
+                        class="btn-soft-xs disabled:opacity-60"
                         :disabled="seasonLocalSaving"
                         @click="cancelEpisodeEdit"
                       >
@@ -1241,7 +1241,7 @@ watch(tvId, () => {
                     <button
                       v-if="seasonLocalSaved"
                       type="button"
-                      class="mt-2 rounded-lg border border-black/10 bg-white px-3 py-1 text-xs hover:bg-sand/50 disabled:opacity-60"
+                      class="btn-soft-xs mt-2 px-3 py-1 disabled:opacity-60"
                       :disabled="seasonLocalSaving"
                       @click="startEpisodeEdit(ep)"
                     >

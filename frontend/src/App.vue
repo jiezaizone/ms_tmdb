@@ -33,16 +33,16 @@ onBeforeUnmount(() => {
     <header class="app-header">
       <div class="page-shell app-header-inner">
         <div>
-          <p class="text-xs uppercase tracking-[0.25em] text-pine/80">MS-TMDB</p>
-          <h1 class="text-2xl font-bold text-ink md:text-3xl">媒体代理控制台</h1>
+          <p class="app-brand-tag">MS-TMDB</p>
+          <h1 class="app-brand-title">媒体代理控制台</h1>
         </div>
-        <nav class="flex items-center gap-2 rounded-full bg-white/80 p-1 shadow-soft">
+        <nav class="app-nav">
           <RouterLink
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
-            class="rounded-full px-4 py-2 text-sm text-ink transition hover:bg-sand/70"
-            active-class="bg-pine text-white hover:bg-pine"
+            class="app-nav-link"
+            active-class="app-nav-link-active"
           >
             {{ item.label }}
           </RouterLink>

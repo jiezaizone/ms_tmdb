@@ -597,12 +597,12 @@ watch(movieId, () => {
             </p>
           </div>
 
-          <div class="mt-6 rounded-xl border border-black/10 bg-white/70 p-4">
+          <div class="panel-glass mt-6 rounded-xl p-4">
             <div class="flex items-center justify-between gap-3">
               <h3 class="text-sm font-semibold">本地信息编辑</h3>
               <div class="flex items-center gap-2">
                 <button
-                  class="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs text-red-700 hover:bg-red-100 disabled:opacity-60"
+                  class="btn-danger-soft-xs disabled:opacity-60"
                   :disabled="deleting || saving"
                   @click="deleteCurrentMovie"
                 >
@@ -610,7 +610,7 @@ watch(movieId, () => {
                 </button>
                 <button
                   v-if="!isEditing"
-                  class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs hover:bg-sand/50"
+                  class="btn-soft-xs"
                   @click="enterEditMode"
                 >
                   编辑
@@ -628,7 +628,7 @@ watch(movieId, () => {
                   片名
                   <input
                     v-model="editForm.title"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="电影标题"
                   />
                 </label>
@@ -636,16 +636,16 @@ watch(movieId, () => {
                   原始片名
                   <input
                     v-model="editForm.original_title"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="Original Title"
                   />
                 </label>
                 <label class="text-xs text-black/60 md:col-span-2">
                   类型（多选）
-                  <div class="mt-1 flex flex-wrap gap-2 rounded-lg border border-black/10 bg-white p-2">
+                  <div class="mt-1 flex flex-wrap gap-2 rounded-lg border border-white/70 bg-white/55 p-2 backdrop-blur">
                     <input
                       v-model="genreKeyword"
-                      class="w-full rounded-md border border-black/10 bg-sand/20 px-2.5 py-1.5 text-xs"
+                      class="field-control-xs w-full"
                       placeholder="筛选类型"
                     />
                     <label
@@ -672,7 +672,7 @@ watch(movieId, () => {
                   上映日期
                   <input
                     v-model="editForm.release_date"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="YYYY-MM-DD"
                   />
                 </label>
@@ -680,7 +680,7 @@ watch(movieId, () => {
                   状态
                   <select
                     v-model="editForm.status"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                   >
                     <option v-for="status in movieStatusOptions" :key="status.value" :value="status.value">{{ status.label }}</option>
                   </select>
@@ -689,7 +689,7 @@ watch(movieId, () => {
                   标语
                   <input
                     v-model="editForm.tagline"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="Tagline"
                   />
                 </label>
@@ -697,7 +697,7 @@ watch(movieId, () => {
                   时长(分钟)
                   <input
                     v-model="editForm.runtime"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="Runtime"
                   />
                 </label>
@@ -705,7 +705,7 @@ watch(movieId, () => {
                   原始语言
                   <input
                     v-model="editForm.original_language"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="zh / en"
                   />
                 </label>
@@ -713,7 +713,7 @@ watch(movieId, () => {
                   主页链接
                   <input
                     v-model="editForm.homepage"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="https://..."
                   />
                 </label>
@@ -721,7 +721,7 @@ watch(movieId, () => {
                   海报路径
                   <input
                     v-model="editForm.poster_path"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="/poster.jpg"
                   />
                 </label>
@@ -729,7 +729,7 @@ watch(movieId, () => {
                   背景图路径
                   <input
                     v-model="editForm.backdrop_path"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="/backdrop.jpg"
                   />
                 </label>
@@ -737,7 +737,7 @@ watch(movieId, () => {
                   评分
                   <input
                     v-model="editForm.vote_average"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="7.8"
                   />
                 </label>
@@ -745,7 +745,7 @@ watch(movieId, () => {
                   热度
                   <input
                     v-model="editForm.popularity"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="123.45"
                   />
                 </label>
@@ -754,7 +754,7 @@ watch(movieId, () => {
                   <textarea
                     v-model="editForm.overview"
                     rows="4"
-                    class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+                    class="field-control mt-1 w-full text-sm"
                     placeholder="简介"
                   />
                 </label>
@@ -762,14 +762,14 @@ watch(movieId, () => {
 
               <div class="mt-3 flex items-center gap-3">
                 <button
-                  class="rounded-lg bg-coral px-4 py-2 text-sm font-medium text-white hover:bg-coral/90 disabled:opacity-60"
+                  class="btn-primary disabled:opacity-60"
                   :disabled="saving"
                   @click="saveMovieChanges"
                 >
                   {{ saving ? "保存中..." : "保存到本地数据库" }}
                 </button>
                 <button
-                  class="rounded-lg border border-black/10 bg-white px-4 py-2 text-sm hover:bg-sand/50 disabled:opacity-60"
+                  class="btn-soft disabled:opacity-60"
                   :disabled="saving"
                   @click="cancelEditMode"
                 >
