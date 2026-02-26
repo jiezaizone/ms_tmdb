@@ -15,6 +15,7 @@ type GenreOption = {
 };
 
 type MovieEditForm = {
+  tmdb_id: string;
   title: string;
   original_title: string;
   genre_names: string[];
@@ -61,6 +62,10 @@ const remoteDiffError = ref("");
 const remoteDiffDecision = ref<RemoteDiffDecision>("unknown");
 const showRemoteDiffDetails = ref(false);
 const showLocalOverrideDiffDetails = ref(false);
+const tmdbRiskModalVisible = ref(false);
+const tmdbRiskCurrentId = ref<number | null>(null);
+const tmdbRiskNextId = ref<number | null>(null);
+let tmdbRiskConfirmResolver: ((confirmed: boolean) => void) | null = null;
 const genreOptions = ref<GenreOption[]>([]);
 const genreKeyword = ref("");
 const filteredGenreOptions = computed(() => {
@@ -71,6 +76,7 @@ const filteredGenreOptions = computed(() => {
   return genreOptions.value.filter((genre) => genre.name.toLowerCase().includes(keyword));
 });
 const editForm = ref<MovieEditForm>({
+  tmdb_id: "",
   title: "",
   original_title: "",
   genre_names: [],
@@ -137,6 +143,7 @@ function personLink(personId: number) {
 
 function resetEditForm(data: any) {
   editForm.value = {
+    tmdb_id: data?.id != null ? String(data.id) : String(movieId.value || ""),
     title: data?.title ?? "",
     original_title: data?.original_title ?? "",
     genre_names: Array.isArray(data?.genres) ? data.genres.map((g: any) => String(g?.name ?? "").trim()).filter(Boolean) : [],
@@ -195,6 +202,26 @@ function cancelEditMode() {
   genreKeyword.value = "";
   saveError.value = "";
   isEditing.value = false;
+}
+
+function closeTmdbRiskModal(confirmed: boolean) {
+  tmdbRiskModalVisible.value = false;
+  const resolver = tmdbRiskConfirmResolver;
+  tmdbRiskConfirmResolver = null;
+  tmdbRiskCurrentId.value = null;
+  tmdbRiskNextId.value = null;
+  if (resolver) {
+    resolver(confirmed);
+  }
+}
+
+function askTmdbRiskConfirm(currentId: number, nextId: number): Promise<boolean> {
+  tmdbRiskCurrentId.value = currentId;
+  tmdbRiskNextId.value = nextId;
+  tmdbRiskModalVisible.value = true;
+  return new Promise((resolve) => {
+    tmdbRiskConfirmResolver = resolve;
+  });
 }
 
 async function deleteCurrentMovie() {
@@ -394,6 +421,20 @@ async function saveMovieChanges() {
     return;
   }
 
+  const rawTmdbID = editForm.value.tmdb_id.trim();
+  const nextTmdbID = parseOptionalInt(rawTmdbID);
+  const tmdbChanged = nextTmdbID !== undefined && nextTmdbID !== movieId.value;
+  if (tmdbChanged) {
+    if (nextTmdbID === undefined || nextTmdbID <= 0) {
+      saveError.value = "TMDB ID 必须是大于 0 的整数";
+      return;
+    }
+    const riskConfirm = await askTmdbRiskConfirm(movieId.value, nextTmdbID);
+    if (!riskConfirm) {
+      return;
+    }
+  }
+
   saving.value = true;
   saveError.value = "";
   saveMessage.value = "";
@@ -420,11 +461,18 @@ async function saveMovieChanges() {
     if (popularity !== undefined) {
       payload.popularity = popularity;
     }
+    if (tmdbChanged && nextTmdbID !== undefined) {
+      payload.tmdb_id = nextTmdbID;
+    }
 
     await updateMovie(movieId.value, payload);
     saveMessage.value = "已保存到本地数据库";
     isEditing.value = false;
     comparedRemoteId.value = null;
+    if (tmdbChanged && nextTmdbID !== undefined) {
+      await router.replace(`/movie/${nextTmdbID}`);
+      return;
+    }
     await loadData();
   } catch (err: any) {
     saveError.value = err.message ?? "保存失败";
@@ -626,6 +674,17 @@ watch(movieId, () => {
             <div v-else class="mt-3">
               <div class="grid gap-3 md:grid-cols-2">
                 <label class="text-xs text-black/60">
+                  TMDB ID
+                  <input
+                    v-model="editForm.tmdb_id"
+                    class="field-control mt-1 w-full text-sm"
+                    placeholder="例如：550"
+                  />
+                  <p class="mt-1 text-[11px] text-amber-700">
+                    高风险：改动后，后续同步仍使用旧 TMDB ID 拉取；对外返回与访问使用新 TMDB ID。
+                  </p>
+                </label>
+                <label class="text-xs text-black/60">
                   片名
                   <input
                     v-model="editForm.title"
@@ -804,4 +863,30 @@ watch(movieId, () => {
       </div>
     </section>
   </template>
+
+  <div
+    v-if="tmdbRiskModalVisible"
+    class="fixed inset-0 z-[1300] flex items-center justify-center bg-black/45 p-4"
+    @click.self="closeTmdbRiskModal(false)"
+  >
+    <section class="panel-glass w-full max-w-md rounded-2xl p-5">
+      <h3 class="text-base font-semibold text-amber-800">修改 TMDB ID 风险确认</h3>
+      <p class="mt-2 text-sm text-black/75">
+        你正在修改电影 TMDB ID：
+        <span class="font-medium">{{ tmdbRiskCurrentId }}</span>
+        ->
+        <span class="font-medium">{{ tmdbRiskNextId }}</span>
+      </p>
+      <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-xs leading-relaxed text-amber-800">
+        <p>1) 这是高风险操作，可能导致与第三方历史引用不一致；</p>
+        <p>2) 之后自动/手动同步将继续使用旧 TMDB ID 向 TMDB 拉取；</p>
+        <p>3) 对外返回与页面访问将使用新的 TMDB ID。</p>
+      </div>
+
+      <div class="mt-4 flex items-center justify-end gap-2">
+        <button class="btn-soft" @click="closeTmdbRiskModal(false)">取消</button>
+        <button class="btn-primary" @click="closeTmdbRiskModal(true)">确认继续</button>
+      </div>
+    </section>
+  </div>
 </template>

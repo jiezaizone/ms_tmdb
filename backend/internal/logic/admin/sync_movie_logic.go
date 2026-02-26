@@ -38,7 +38,19 @@ func (l *SyncMovieLogic) SyncMovie(req *types.AdminSyncReq) (*types.AdminSyncRes
 
 	mode := normalizeSyncMode(req.Mode)
 
-	remoteRaw, err := l.svcCtx.TmdbClient.GetMovie(req.Id, &tmdbclient.RequestOption{
+	var movie model.Movie
+	exists := true
+	if err := l.svcCtx.DB.Where("tmdb_id = ?", req.Id).First(&movie).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			exists = false
+		} else {
+			return nil, err
+		}
+	}
+
+	remoteTmdbID := l.svcCtx.ProxyService.ResolveMovieSyncID(req.Id)
+
+	remoteRaw, err := l.svcCtx.TmdbClient.GetMovie(remoteTmdbID, &tmdbclient.RequestOption{
 		AppendToResponse: "credits,videos,images",
 	})
 	if err != nil {
@@ -49,16 +61,7 @@ func (l *SyncMovieLogic) SyncMovie(req *types.AdminSyncReq) (*types.AdminSyncRes
 	if err != nil {
 		return nil, err
 	}
-
-	var movie model.Movie
-	exists := true
-	if err := l.svcCtx.DB.Where("tmdb_id = ?", req.Id).First(&movie).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			exists = false
-		} else {
-			return nil, err
-		}
-	}
+	remoteData["id"] = req.Id
 
 	localPatch := make(map[string]interface{})
 	if exists {
@@ -150,6 +153,7 @@ func (l *SyncMovieLogic) SyncMovie(req *types.AdminSyncReq) (*types.AdminSyncRes
 			"tmdb_data":         tmdbData,
 			"local_data":        localData,
 			"is_modified":       isModified,
+			"sync_tmdb_id":      remoteTmdbID,
 			"last_synced_at":    &now,
 		}
 		if err := l.svcCtx.DB.Model(&model.Movie{}).Where("tmdb_id = ?", req.Id).Updates(updates).Error; err != nil {
@@ -158,6 +162,7 @@ func (l *SyncMovieLogic) SyncMovie(req *types.AdminSyncReq) (*types.AdminSyncRes
 	} else {
 		record := model.Movie{
 			TmdbID:           req.Id,
+			SyncTmdbID:       remoteTmdbID,
 			Title:            mapString(finalData, "title"),
 			OriginalTitle:    mapString(finalData, "original_title"),
 			Overview:         mapString(finalData, "overview"),

@@ -196,6 +196,16 @@ func sortedKeys(m map[string]interface{}) []string {
 	return keys
 }
 
+func effectiveSyncTmdbID(syncTmdbID int, currentTmdbID int) int {
+	if syncTmdbID > 0 {
+		return syncTmdbID
+	}
+	if currentTmdbID > 0 {
+		return currentTmdbID
+	}
+	return 0
+}
+
 func sanitizeLocalPatch(localPatch map[string]interface{}, remote map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{}, len(localPatch))
 	for key, value := range localPatch {

@@ -51,6 +51,7 @@ func (j *RawJSON) UnmarshalJSON(data []byte) error {
 type Movie struct {
 	gorm.Model
 	TmdbID           int        `gorm:"uniqueIndex;not null" json:"tmdb_id"`
+	SyncTmdbID       int        `gorm:"index;default:0" json:"sync_tmdb_id"`
 	Title            string     `gorm:"index" json:"title"`
 	OriginalTitle    string     `json:"original_title"`
 	Overview         string     `gorm:"type:text" json:"overview"`
@@ -79,6 +80,7 @@ type Movie struct {
 type TVSeries struct {
 	gorm.Model
 	TmdbID           int        `gorm:"uniqueIndex;not null" json:"tmdb_id"`
+	SyncTmdbID       int        `gorm:"index;default:0" json:"sync_tmdb_id"`
 	Name             string     `gorm:"index" json:"name"`
 	OriginalName     string     `json:"original_name"`
 	Overview         string     `gorm:"type:text" json:"overview"`

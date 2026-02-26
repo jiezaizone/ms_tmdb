@@ -25,19 +25,21 @@ type tmdbRouteDispatcher struct {
 	patterns []tmdbPatternRoute
 }
 
+type tmdbIDResolver func(id int) int
+
 func newTmdbRouteDispatcher(client *tmdbclient.Client, proxyService *proxy.ProxyService) *tmdbRouteDispatcher {
 	return &tmdbRouteDispatcher{
 		client: client,
 		exacts: buildExactHandlers(client),
 		patterns: []tmdbPatternRoute{
 			{pattern: regexp.MustCompile(`^/movie/(-?\d+)$`), handler: detailRoute(proxyService.GetMovieDetail)},
-			{pattern: regexp.MustCompile(`^/movie/(-?\d+)/(.+)$`), handler: passThroughRoute(client, "/movie/%d/%s", 1)},
-			{pattern: regexp.MustCompile(`^/tv/(-?\d+)/season/(\d+)/episode/(\d+)/(.+)$`), handler: passThroughRoute(client, "/tv/%d/season/%d/episode/%d/%s", 1, 2, 3)},
-			{pattern: regexp.MustCompile(`^/tv/(-?\d+)/season/(\d+)/episode/(\d+)$`), handler: episodeDetailRoute(client.GetTVEpisode)},
-			{pattern: regexp.MustCompile(`^/tv/(-?\d+)/season/(\d+)/(.+)$`), handler: passThroughRoute(client, "/tv/%d/season/%d/%s", 1, 2)},
+			{pattern: regexp.MustCompile(`^/movie/(-?\d+)/(.+)$`), handler: passThroughMappedRoute(client, "/movie/%d/%s", map[int]tmdbIDResolver{1: proxyService.ResolveMovieSyncID}, 1, -1)},
+			{pattern: regexp.MustCompile(`^/tv/(-?\d+)/season/(\d+)/episode/(\d+)/(.+)$`), handler: passThroughMappedRoute(client, "/tv/%d/season/%d/episode/%d/%s", map[int]tmdbIDResolver{1: proxyService.ResolveTVSyncID}, 1, 2, 3)},
+			{pattern: regexp.MustCompile(`^/tv/(-?\d+)/season/(\d+)/episode/(\d+)$`), handler: episodeDetailMappedRoute(client.GetTVEpisode, proxyService.ResolveTVSyncID)},
+			{pattern: regexp.MustCompile(`^/tv/(-?\d+)/season/(\d+)/(.+)$`), handler: passThroughMappedRoute(client, "/tv/%d/season/%d/%s", map[int]tmdbIDResolver{1: proxyService.ResolveTVSyncID}, 1, 2)},
 			{pattern: regexp.MustCompile(`^/tv/(-?\d+)/season/(\d+)$`), handler: seasonDetailRoute(proxyService.GetTvSeasonDetail)},
 			{pattern: regexp.MustCompile(`^/tv/(-?\d+)$`), handler: detailRoute(proxyService.GetTvSeriesDetail)},
-			{pattern: regexp.MustCompile(`^/tv/(-?\d+)/(.+)$`), handler: passThroughRoute(client, "/tv/%d/%s", 1)},
+			{pattern: regexp.MustCompile(`^/tv/(-?\d+)/(.+)$`), handler: passThroughMappedRoute(client, "/tv/%d/%s", map[int]tmdbIDResolver{1: proxyService.ResolveTVSyncID}, 1, -1)},
 			{pattern: regexp.MustCompile(`^/person/(-?\d+)$`), handler: detailRoute(proxyService.GetPersonDetail)},
 			{pattern: regexp.MustCompile(`^/person/(-?\d+)/(.+)$`), handler: passThroughRoute(client, "/person/%d/%s", 1)},
 			{pattern: regexp.MustCompile(`^/trending/(\w+)/(\w+)$`), handler: trendingRoute(client.GetTrending)},
@@ -140,27 +142,76 @@ func episodeDetailRoute(handler func(seriesID, seasonNum, episodeNum int, opts *
 	}
 }
 
+func episodeDetailMappedRoute(
+	handler func(seriesID, seasonNum, episodeNum int, opts *tmdbclient.RequestOption) (json.RawMessage, error),
+	resolver tmdbIDResolver,
+) tmdbPatternHandler {
+	return func(matches []string, opts *tmdbclient.RequestOption, _ *http.Request) (json.RawMessage, error) {
+		seriesID, err := parseIntParam(matches[1], "series_id")
+		if err != nil {
+			return nil, err
+		}
+		if resolver != nil {
+			seriesID = resolver(seriesID)
+		}
+		seasonNum, err := parseIntParam(matches[2], "season_number")
+		if err != nil {
+			return nil, err
+		}
+		episodeNum, err := parseIntParam(matches[3], "episode_number")
+		if err != nil {
+			return nil, err
+		}
+		return handler(seriesID, seasonNum, episodeNum, opts)
+	}
+}
+
 func passThroughRoute(client *tmdbclient.Client, pattern string, intParamIndexes ...int) tmdbPatternHandler {
-	indexes := map[int]bool{}
-	for _, index := range intParamIndexes {
-		indexes[index] = true
+	return passThroughMappedRoute(client, pattern, nil, intParamIndexes...)
+}
+
+func passThroughMappedRoute(client *tmdbclient.Client, pattern string, resolvers map[int]tmdbIDResolver, intParamIndexes ...int) tmdbPatternHandler {
+	rewriteIDMatchIndex := 0
+	indexParams := intParamIndexes
+	if len(intParamIndexes) > 0 && intParamIndexes[len(intParamIndexes)-1] < 0 {
+		rewriteIDMatchIndex = -intParamIndexes[len(intParamIndexes)-1]
+		indexParams = intParamIndexes[:len(intParamIndexes)-1]
+	}
+
+	intParamSet := map[int]bool{}
+	for _, index := range indexParams {
+		intParamSet[index] = true
 	}
 
 	return func(matches []string, opts *tmdbclient.RequestOption, _ *http.Request) (json.RawMessage, error) {
 		values := make([]any, 0, len(matches)-1)
+		originalID := 0
 		for i := 1; i < len(matches); i++ {
 			item := matches[i]
-			if indexes[i] {
+			if intParamSet[i] {
 				intValue, err := parseIntParam(item, fmt.Sprintf("match_%d", i))
 				if err != nil {
 					return nil, err
+				}
+				if i == rewriteIDMatchIndex {
+					originalID = intValue
+				}
+				if resolver, ok := resolvers[i]; ok && resolver != nil {
+					intValue = resolver(intValue)
 				}
 				values = append(values, intValue)
 				continue
 			}
 			values = append(values, item)
 		}
-		return passThroughPath(client, fmt.Sprintf(pattern, values...), opts)
+		data, err := passThroughPath(client, fmt.Sprintf(pattern, values...), opts)
+		if err != nil {
+			return nil, err
+		}
+		if rewriteIDMatchIndex > 0 && originalID > 0 {
+			return rewriteTopLevelID(data, originalID)
+		}
+		return data, nil
 	}
 }
 
@@ -179,4 +230,20 @@ func findRoute(handler func(externalID, externalSource string, opts *tmdbclient.
 
 func passThroughPath(client *tmdbclient.Client, path string, opts *tmdbclient.RequestOption) (json.RawMessage, error) {
 	return client.Request(path, opts)
+}
+
+func rewriteTopLevelID(raw json.RawMessage, id int) (json.RawMessage, error) {
+	if id <= 0 {
+		return raw, nil
+	}
+	payload := map[string]interface{}{}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return raw, nil
+	}
+	payload["id"] = id
+	normalized, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	return normalized, nil
 }

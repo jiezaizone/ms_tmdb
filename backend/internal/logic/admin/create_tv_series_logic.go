@@ -116,6 +116,7 @@ func (l *CreateTvSeriesLogic) CreateTvSeries(req *types.AdminCreateTvReq) (*type
 
 		record := &model.TVSeries{
 			TmdbID:           tmdbID,
+			SyncTmdbID:       tmdbID,
 			Name:             name,
 			OriginalName:     originalName,
 			Overview:         overview,
@@ -144,9 +145,10 @@ func (l *CreateTvSeriesLogic) CreateTvSeries(req *types.AdminCreateTvReq) (*type
 		}
 
 		return &types.AdminCreateResp{
-			TmdbId:  tmdbID,
-			IsLocal: true,
-			Message: "已创建本地剧集条目",
+			TmdbId:     tmdbID,
+			SyncTmdbId: tmdbID,
+			IsLocal:    true,
+			Message:    "已创建本地剧集条目",
 		}, nil
 	}
 

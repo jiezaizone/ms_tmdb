@@ -100,13 +100,17 @@ function resolveFieldLabel(field: string) {
 }
 
 async function executeSync(payload: AdminSyncPayload) {
+  const targetId = Number(props.targetId);
+  if (!Number.isFinite(targetId) || targetId <= 0) {
+    throw new Error("无效目标 ID");
+  }
   if (props.mediaType === "movie") {
-    return syncMovie(props.targetId, payload);
+    return syncMovie(targetId, payload);
   }
   if (props.mediaType === "tv") {
-    return syncTV(props.targetId, payload);
+    return syncTV(targetId, payload);
   }
-  return syncPerson(props.targetId, payload);
+  return syncPerson(targetId, payload);
 }
 
 async function loadChangedFields() {

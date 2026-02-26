@@ -139,6 +139,7 @@ export type AdminCompareFieldDetail = {
 
 export type AdminCreateResp = {
   tmdb_id: number;
+  sync_tmdb_id?: number;
   is_local: boolean;
   message: string;
 };

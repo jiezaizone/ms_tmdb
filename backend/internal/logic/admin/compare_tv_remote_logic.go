@@ -33,21 +33,18 @@ func (l *CompareTvRemoteLogic) CompareTvRemote(req *types.AdminSyncReq) (resp *t
 		return nil, errors.New("无效剧集 ID")
 	}
 
-	remoteRaw, err := l.svcCtx.TmdbClient.GetTVSeries(req.Id, &tmdbclient.RequestOption{
-		AppendToResponse: "credits,videos,images",
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	remoteData, err := rawJSONToMap(model.RawJSON(remoteRaw))
-	if err != nil {
-		return nil, err
-	}
-
 	var tv model.TVSeries
 	if err := l.svcCtx.DB.Where("tmdb_id = ?", req.Id).First(&tv).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			remoteRaw, remoteErr := l.svcCtx.TmdbClient.GetTVSeries(req.Id, &tmdbclient.RequestOption{
+				AppendToResponse: "credits,videos,images",
+			})
+			if remoteErr != nil {
+				return nil, remoteErr
+			}
+			if _, parseErr := rawJSONToMap(model.RawJSON(remoteRaw)); parseErr != nil {
+				return nil, parseErr
+			}
 			return &types.AdminCompareResp{
 				HasDiff:                 true,
 				DiffFields:              []string{"local_record_missing"},
@@ -65,6 +62,24 @@ func (l *CompareTvRemoteLogic) CompareTvRemote(req *types.AdminSyncReq) (resp *t
 		}
 		return nil, err
 	}
+
+	remoteTmdbID := l.svcCtx.ProxyService.ResolveTVSyncID(req.Id)
+	if remoteTmdbID <= 0 {
+		return nil, errors.New("无效剧集 TMDB 同步 ID")
+	}
+
+	remoteRaw, err := l.svcCtx.TmdbClient.GetTVSeries(remoteTmdbID, &tmdbclient.RequestOption{
+		AppendToResponse: "credits,videos,images",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	remoteData, err := rawJSONToMap(model.RawJSON(remoteRaw))
+	if err != nil {
+		return nil, err
+	}
+	remoteData["id"] = tv.TmdbID
 
 	localData, err := rawJSONToMap(tv.TmdbData)
 	if err != nil {

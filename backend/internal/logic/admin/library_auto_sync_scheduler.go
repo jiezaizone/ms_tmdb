@@ -303,7 +303,7 @@ func (s *LibraryAutoSyncScheduler) syncMovies(ctx context.Context, settings Auto
 		var records []model.Movie
 		query := s.svcCtx.DB.
 			Model(&model.Movie{}).
-			Select("id", "tmdb_id", "title").
+			Select("id", "tmdb_id", "sync_tmdb_id", "title").
 			Where("tmdb_id > 0").
 			Order("id ASC").
 			Limit(settings.BatchSize)
@@ -326,7 +326,7 @@ func (s *LibraryAutoSyncScheduler) syncMovies(ctx context.Context, settings Auto
 		for _, record := range records {
 			lastID = record.ID
 			stats.checked++
-			needSync, remoteDiffFields, fieldChanges, err := s.needSyncMovie(record.TmdbID, settings.Mode, compareLogic)
+			needSync, remoteDiffFields, fieldChanges, err := s.needSyncMovie(record.TmdbID, s.svcCtx.ProxyService.ResolveMovieSyncID(record.TmdbID), settings.Mode, compareLogic)
 			if err != nil {
 				stats.failed++
 				detail.Failed = append(detail.Failed, autoSyncExecutionItem{
@@ -379,7 +379,7 @@ func (s *LibraryAutoSyncScheduler) syncTvSeries(ctx context.Context, settings Au
 		var records []model.TVSeries
 		query := s.svcCtx.DB.
 			Model(&model.TVSeries{}).
-			Select("id", "tmdb_id", "name").
+			Select("id", "tmdb_id", "sync_tmdb_id", "name").
 			Where("tmdb_id > 0").
 			Order("id ASC").
 			Limit(settings.BatchSize)
@@ -402,7 +402,7 @@ func (s *LibraryAutoSyncScheduler) syncTvSeries(ctx context.Context, settings Au
 		for _, record := range records {
 			lastID = record.ID
 			stats.checked++
-			needSync, remoteDiffFields, fieldChanges, err := s.needSyncTv(record.TmdbID, settings.Mode, compareLogic)
+			needSync, remoteDiffFields, fieldChanges, err := s.needSyncTv(record.TmdbID, s.svcCtx.ProxyService.ResolveTVSyncID(record.TmdbID), settings.Mode, compareLogic)
 			if err != nil {
 				stats.failed++
 				detail.Failed = append(detail.Failed, autoSyncExecutionItem{
@@ -520,10 +520,13 @@ func (s *LibraryAutoSyncScheduler) syncPeople(ctx context.Context, settings Auto
 	}
 }
 
-func (s *LibraryAutoSyncScheduler) needSyncMovie(tmdbID int, mode string, compareLogic *CompareMovieRemoteLogic) (bool, []string, []autoSyncFieldChange, error) {
-	resp, err := compareLogic.CompareMovieRemote(&types.AdminSyncReq{Id: tmdbID})
+func (s *LibraryAutoSyncScheduler) needSyncMovie(displayTmdbID int, remoteTmdbID int, mode string, compareLogic *CompareMovieRemoteLogic) (bool, []string, []autoSyncFieldChange, error) {
+	if remoteTmdbID <= 0 {
+		return false, nil, nil, fmt.Errorf("无效电影 TMDB 同步 ID: %d", remoteTmdbID)
+	}
+	resp, err := compareLogic.CompareMovieRemote(&types.AdminSyncReq{Id: displayTmdbID})
 	if err != nil {
-		logx.Errorf("检测电影远程差异失败: tmdb_id=%d, err=%v", tmdbID, err)
+		logx.Errorf("检测电影远程差异失败: tmdb_id=%d, sync_tmdb_id=%d, err=%v", displayTmdbID, remoteTmdbID, err)
 		return false, nil, nil, err
 	}
 	remoteDiffFields, fieldChanges := extractEffectiveRemoteDiff(resp)
@@ -533,10 +536,13 @@ func (s *LibraryAutoSyncScheduler) needSyncMovie(tmdbID int, mode string, compar
 	return mode == syncModeOverwriteAll && len(resp.LocalOverrideDiffFields) > 0, []string{}, fieldChanges, nil
 }
 
-func (s *LibraryAutoSyncScheduler) needSyncTv(tmdbID int, mode string, compareLogic *CompareTvRemoteLogic) (bool, []string, []autoSyncFieldChange, error) {
-	resp, err := compareLogic.CompareTvRemote(&types.AdminSyncReq{Id: tmdbID})
+func (s *LibraryAutoSyncScheduler) needSyncTv(displayTmdbID int, remoteTmdbID int, mode string, compareLogic *CompareTvRemoteLogic) (bool, []string, []autoSyncFieldChange, error) {
+	if remoteTmdbID <= 0 {
+		return false, nil, nil, fmt.Errorf("无效剧集 TMDB 同步 ID: %d", remoteTmdbID)
+	}
+	resp, err := compareLogic.CompareTvRemote(&types.AdminSyncReq{Id: displayTmdbID})
 	if err != nil {
-		logx.Errorf("检测剧集远程差异失败: tmdb_id=%d, err=%v", tmdbID, err)
+		logx.Errorf("检测剧集远程差异失败: tmdb_id=%d, sync_tmdb_id=%d, err=%v", displayTmdbID, remoteTmdbID, err)
 		return false, nil, nil, err
 	}
 	remoteDiffFields, fieldChanges := extractEffectiveRemoteDiff(resp)

@@ -38,7 +38,19 @@ func (l *SyncTvSeriesLogic) SyncTvSeries(req *types.AdminSyncReq) (*types.AdminS
 
 	mode := normalizeSyncMode(req.Mode)
 
-	remoteRaw, err := l.svcCtx.TmdbClient.GetTVSeries(req.Id, &tmdbclient.RequestOption{
+	var tv model.TVSeries
+	exists := true
+	if err := l.svcCtx.DB.Where("tmdb_id = ?", req.Id).First(&tv).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			exists = false
+		} else {
+			return nil, err
+		}
+	}
+
+	remoteTmdbID := l.svcCtx.ProxyService.ResolveTVSyncID(req.Id)
+
+	remoteRaw, err := l.svcCtx.TmdbClient.GetTVSeries(remoteTmdbID, &tmdbclient.RequestOption{
 		AppendToResponse: "credits,videos,images",
 	})
 	if err != nil {
@@ -49,16 +61,7 @@ func (l *SyncTvSeriesLogic) SyncTvSeries(req *types.AdminSyncReq) (*types.AdminS
 	if err != nil {
 		return nil, err
 	}
-
-	var tv model.TVSeries
-	exists := true
-	if err := l.svcCtx.DB.Where("tmdb_id = ?", req.Id).First(&tv).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			exists = false
-		} else {
-			return nil, err
-		}
-	}
+	remoteData["id"] = req.Id
 
 	localPatch := make(map[string]interface{})
 	if exists {
@@ -150,6 +153,7 @@ func (l *SyncTvSeriesLogic) SyncTvSeries(req *types.AdminSyncReq) (*types.AdminS
 			"tmdb_data":          tmdbData,
 			"local_data":         localData,
 			"is_modified":        isModified,
+			"sync_tmdb_id":       remoteTmdbID,
 			"last_synced_at":     &now,
 		}
 		if err := l.svcCtx.DB.Model(&model.TVSeries{}).Where("tmdb_id = ?", req.Id).Updates(updates).Error; err != nil {
@@ -158,6 +162,7 @@ func (l *SyncTvSeriesLogic) SyncTvSeries(req *types.AdminSyncReq) (*types.AdminS
 	} else {
 		record := model.TVSeries{
 			TmdbID:           req.Id,
+			SyncTmdbID:       remoteTmdbID,
 			Name:             mapString(finalData, "name"),
 			OriginalName:     mapString(finalData, "original_name"),
 			Overview:         mapString(finalData, "overview"),

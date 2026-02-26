@@ -107,6 +107,7 @@ func (l *CreateMovieLogic) CreateMovie(req *types.AdminCreateMovieReq) (*types.A
 
 		record := &model.Movie{
 			TmdbID:           tmdbID,
+			SyncTmdbID:       tmdbID,
 			Title:            title,
 			OriginalTitle:    originalTitle,
 			Overview:         overview,
@@ -133,9 +134,10 @@ func (l *CreateMovieLogic) CreateMovie(req *types.AdminCreateMovieReq) (*types.A
 		}
 
 		return &types.AdminCreateResp{
-			TmdbId:  tmdbID,
-			IsLocal: true,
-			Message: "已创建本地电影条目",
+			TmdbId:     tmdbID,
+			SyncTmdbId: tmdbID,
+			IsLocal:    true,
+			Message:    "已创建本地电影条目",
 		}, nil
 	}
 

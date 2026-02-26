@@ -36,9 +36,10 @@ type AdminCreateMovieReq struct {
 }
 
 type AdminCreateResp struct {
-	TmdbId  int    `json:"tmdb_id"`
-	IsLocal bool   `json:"is_local"`
-	Message string `json:"message"`
+	TmdbId     int    `json:"tmdb_id"`
+	SyncTmdbId int    `json:"sync_tmdb_id"`
+	IsLocal    bool   `json:"is_local"`
+	Message    string `json:"message"`
 }
 
 type AdminProxyReq struct {
@@ -166,6 +167,7 @@ type AdminSyncResp struct {
 
 type AdminUpdateReq struct {
 	Id               int      `path:"id"`
+	TmdbId           *int     `json:"tmdb_id,optional"`
 	Title            *string  `json:"title,optional"`
 	OriginalTitle    *string  `json:"original_title,optional"`
 	Overview         *string  `json:"overview,optional"`

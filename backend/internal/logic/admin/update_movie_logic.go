@@ -44,74 +44,108 @@ func (l *UpdateMovieLogic) UpdateMovie(req *types.AdminUpdateReq) error {
 		"is_modified": true,
 	}
 
+	hasFieldUpdate := false
+	if req.TmdbId != nil {
+		nextTmdbID := *req.TmdbId
+		if nextTmdbID <= 0 {
+			return errors.New("tmdb_id 必须大于 0")
+		}
+		if nextTmdbID != movie.TmdbID {
+			var duplicated model.Movie
+			if err := l.svcCtx.DB.Where("tmdb_id = ?", nextTmdbID).First(&duplicated).Error; err == nil {
+				return errors.New("目标 tmdb_id 已存在，请使用其他 ID")
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			updates["tmdb_id"] = nextTmdbID
+			updates["sync_tmdb_id"] = effectiveSyncTmdbID(movie.SyncTmdbID, movie.TmdbID)
+			patch["id"] = nextTmdbID
+			hasFieldUpdate = true
+		}
+	}
+
 	if req.Title != nil {
 		value := trimPtrString(req.Title)
 		patch["title"] = value
 		updates["title"] = value
+		hasFieldUpdate = true
 	}
 	if req.OriginalTitle != nil {
 		value := trimPtrString(req.OriginalTitle)
 		patch["original_title"] = value
 		updates["original_title"] = value
+		hasFieldUpdate = true
 	}
 	if req.Overview != nil {
 		value := trimPtrString(req.Overview)
 		patch["overview"] = value
 		updates["overview"] = value
+		hasFieldUpdate = true
 	}
 	if req.Tagline != nil {
 		value := trimPtrString(req.Tagline)
 		patch["tagline"] = value
 		updates["tagline"] = value
+		hasFieldUpdate = true
 	}
 	if req.ReleaseDate != nil {
 		value := trimPtrString(req.ReleaseDate)
 		patch["release_date"] = value
 		updates["release_date"] = value
+		hasFieldUpdate = true
 	}
 	if req.Status != nil {
 		value := trimPtrString(req.Status)
 		patch["status"] = value
 		updates["status"] = value
+		hasFieldUpdate = true
 	}
 	if req.Runtime != nil {
 		patch["runtime"] = *req.Runtime
 		updates["runtime"] = *req.Runtime
+		hasFieldUpdate = true
 	}
 	if req.OriginalLanguage != nil {
 		value := trimPtrString(req.OriginalLanguage)
 		patch["original_language"] = value
 		updates["original_language"] = value
+		hasFieldUpdate = true
 	}
 	if req.Homepage != nil {
 		value := trimPtrString(req.Homepage)
 		patch["homepage"] = value
 		updates["homepage"] = value
+		hasFieldUpdate = true
 	}
 	if req.PosterPath != nil {
 		value := trimPtrString(req.PosterPath)
 		patch["poster_path"] = value
 		updates["poster_path"] = value
+		hasFieldUpdate = true
 	}
 	if req.BackdropPath != nil {
 		value := trimPtrString(req.BackdropPath)
 		patch["backdrop_path"] = value
 		updates["backdrop_path"] = value
+		hasFieldUpdate = true
 	}
 	if req.VoteAverage != nil {
 		patch["vote_average"] = *req.VoteAverage
 		updates["vote_average"] = *req.VoteAverage
+		hasFieldUpdate = true
 	}
 	if req.Popularity != nil {
 		patch["popularity"] = *req.Popularity
 		updates["popularity"] = *req.Popularity
+		hasFieldUpdate = true
 	}
 	if req.GenreNames != nil {
 		genres := buildGenresFromNames(req.GenreNames)
 		patch["genres"] = genres
+		hasFieldUpdate = true
 	}
 
-	if len(patch) == 0 {
+	if !hasFieldUpdate {
 		return errors.New("没有可更新的电影字段")
 	}
 

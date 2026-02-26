@@ -25,6 +25,32 @@ func NewProxyService(db *gorm.DB, client *tmdbclient.Client) *ProxyService {
 	return &ProxyService{DB: db, TmdbClient: client}
 }
 
+// ResolveMovieSyncID 将对外 TMDB ID 解析为实际拉取 TMDB 的 ID。
+func (s *ProxyService) ResolveMovieSyncID(tmdbID int) int {
+	var movie model.Movie
+	if err := s.DB.Where("tmdb_id = ?", tmdbID).First(&movie).Error; err != nil {
+		return tmdbID
+	}
+	resolved := resolveSyncTmdbID(movie.SyncTmdbID, movie.TmdbID)
+	if resolved <= 0 {
+		return tmdbID
+	}
+	return resolved
+}
+
+// ResolveTVSyncID 将对外 TMDB ID 解析为实际拉取 TMDB 的 ID。
+func (s *ProxyService) ResolveTVSyncID(tmdbID int) int {
+	var tv model.TVSeries
+	if err := s.DB.Where("tmdb_id = ?", tmdbID).First(&tv).Error; err != nil {
+		return tmdbID
+	}
+	resolved := resolveSyncTmdbID(tv.SyncTmdbID, tv.TmdbID)
+	if resolved <= 0 {
+		return tmdbID
+	}
+	return resolved
+}
+
 // GetMovieDetail Read-Through 获取电影详情
 func (s *ProxyService) GetMovieDetail(tmdbID int, opts *tmdbclient.RequestOption) (json.RawMessage, error) {
 	var movie model.Movie
@@ -36,7 +62,12 @@ func (s *ProxyService) GetMovieDetail(tmdbID int, opts *tmdbclient.RequestOption
 		}
 	}
 
-	data, fetchErr := s.TmdbClient.GetMovie(tmdbID, opts)
+	syncTmdbID := tmdbID
+	if err == nil {
+		syncTmdbID = resolveSyncTmdbID(movie.SyncTmdbID, movie.TmdbID)
+	}
+
+	data, fetchErr := s.TmdbClient.GetMovie(syncTmdbID, opts)
 	if fetchErr != nil {
 		if err == nil {
 			logx.Infof("TMDB 不可用，返回本地缓存: movie/%d", tmdbID)
@@ -45,8 +76,13 @@ func (s *ProxyService) GetMovieDetail(tmdbID int, opts *tmdbclient.RequestOption
 		return nil, fetchErr
 	}
 
-	s.upsertMovie(tmdbID, data)
-	return data, nil
+	normalizedData, normalizeErr := rewriteTMDBID(data, tmdbID)
+	if normalizeErr != nil {
+		return nil, normalizeErr
+	}
+
+	s.upsertMovie(tmdbID, syncTmdbID, normalizedData)
+	return normalizedData, nil
 }
 
 // GetTvSeriesDetail Read-Through 获取电视剧详情
@@ -60,7 +96,12 @@ func (s *ProxyService) GetTvSeriesDetail(tmdbID int, opts *tmdbclient.RequestOpt
 		}
 	}
 
-	data, fetchErr := s.TmdbClient.GetTVSeries(tmdbID, opts)
+	syncTmdbID := tmdbID
+	if err == nil {
+		syncTmdbID = resolveSyncTmdbID(tv.SyncTmdbID, tv.TmdbID)
+	}
+
+	data, fetchErr := s.TmdbClient.GetTVSeries(syncTmdbID, opts)
 	if fetchErr != nil {
 		if err == nil {
 			return json.RawMessage(tv.TmdbData), nil
@@ -68,8 +109,13 @@ func (s *ProxyService) GetTvSeriesDetail(tmdbID int, opts *tmdbclient.RequestOpt
 		return nil, fetchErr
 	}
 
-	s.upsertTVSeries(tmdbID, data)
-	return data, nil
+	normalizedData, normalizeErr := rewriteTMDBID(data, tmdbID)
+	if normalizeErr != nil {
+		return nil, normalizeErr
+	}
+
+	s.upsertTVSeries(tmdbID, syncTmdbID, normalizedData)
+	return normalizedData, nil
 }
 
 // GetTvSeasonDetail 优先返回本地保存的季明细，未保存时透传 TMDB
@@ -86,7 +132,13 @@ func (s *ProxyService) GetTvSeasonDetail(seriesID, seasonNumber int, opts *tmdbc
 		return raw, nil
 	}
 
-	return s.TmdbClient.GetTVSeason(seriesID, seasonNumber, opts)
+	syncSeriesID := seriesID
+	var tv model.TVSeries
+	if err := s.DB.Where("tmdb_id = ?", seriesID).First(&tv).Error; err == nil {
+		syncSeriesID = resolveSyncTmdbID(tv.SyncTmdbID, tv.TmdbID)
+	}
+
+	return s.TmdbClient.GetTVSeason(syncSeriesID, seasonNumber, opts)
 }
 
 // GetLocalTvSeason 获取本地已保存季明细
@@ -127,7 +179,13 @@ func (s *ProxyService) SaveTvSeasonToLocal(seriesID, seasonNumber int, opts *tmd
 		return nil, err
 	}
 
-	raw, err := s.TmdbClient.GetTVSeason(seriesID, seasonNumber, opts)
+	syncSeriesID := seriesID
+	var tv model.TVSeries
+	if err := s.DB.Where("tmdb_id = ?", seriesID).First(&tv).Error; err == nil {
+		syncSeriesID = resolveSyncTmdbID(tv.SyncTmdbID, tv.TmdbID)
+	}
+
+	raw, err := s.TmdbClient.GetTVSeason(syncSeriesID, seasonNumber, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +243,7 @@ func (s *ProxyService) GetPersonDetail(tmdbID int, opts *tmdbclient.RequestOptio
 	return data, nil
 }
 
-func (s *ProxyService) upsertMovie(tmdbID int, data json.RawMessage) {
+func (s *ProxyService) upsertMovie(tmdbID int, syncTmdbID int, data json.RawMessage) {
 	var parsed struct {
 		Title            string  `json:"title"`
 		OriginalTitle    string  `json:"original_title"`
@@ -212,7 +270,7 @@ func (s *ProxyService) upsertMovie(tmdbID int, data json.RawMessage) {
 	result := s.DB.Where("tmdb_id = ?", tmdbID).First(&model.Movie{})
 	if result.Error == gorm.ErrRecordNotFound {
 		s.DB.Create(&model.Movie{
-			TmdbID: tmdbID, Title: parsed.Title, OriginalTitle: parsed.OriginalTitle,
+			TmdbID: tmdbID, SyncTmdbID: resolveSyncTmdbID(syncTmdbID, tmdbID), Title: parsed.Title, OriginalTitle: parsed.OriginalTitle,
 			Overview: parsed.Overview, ReleaseDate: parsed.ReleaseDate,
 			Popularity: parsed.Popularity, VoteAverage: parsed.VoteAverage, VoteCount: parsed.VoteCount,
 			PosterPath: parsed.PosterPath, BackdropPath: parsed.BackdropPath,
@@ -226,12 +284,12 @@ func (s *ProxyService) upsertMovie(tmdbID int, data json.RawMessage) {
 			"title": parsed.Title, "original_title": parsed.OriginalTitle,
 			"overview": parsed.Overview, "popularity": parsed.Popularity,
 			"vote_average": parsed.VoteAverage, "poster_path": parsed.PosterPath,
-			"tmdb_data": model.RawJSON(data), "last_synced_at": &now,
+			"tmdb_data": model.RawJSON(data), "last_synced_at": &now, "sync_tmdb_id": resolveSyncTmdbID(syncTmdbID, tmdbID),
 		})
 	}
 }
 
-func (s *ProxyService) upsertTVSeries(tmdbID int, data json.RawMessage) {
+func (s *ProxyService) upsertTVSeries(tmdbID int, syncTmdbID int, data json.RawMessage) {
 	var parsed struct {
 		Name         string  `json:"name"`
 		OriginalName string  `json:"original_name"`
@@ -248,7 +306,7 @@ func (s *ProxyService) upsertTVSeries(tmdbID int, data json.RawMessage) {
 	result := s.DB.Where("tmdb_id = ?", tmdbID).First(&model.TVSeries{})
 	if result.Error == gorm.ErrRecordNotFound {
 		s.DB.Create(&model.TVSeries{
-			TmdbID: tmdbID, Name: parsed.Name, OriginalName: parsed.OriginalName,
+			TmdbID: tmdbID, SyncTmdbID: resolveSyncTmdbID(syncTmdbID, tmdbID), Name: parsed.Name, OriginalName: parsed.OriginalName,
 			Overview: parsed.Overview, FirstAirDate: parsed.FirstAirDate,
 			Popularity: parsed.Popularity, VoteAverage: parsed.VoteAverage,
 			PosterPath: parsed.PosterPath, Status: parsed.Status,
@@ -258,7 +316,7 @@ func (s *ProxyService) upsertTVSeries(tmdbID int, data json.RawMessage) {
 		s.DB.Model(&model.TVSeries{}).Where("tmdb_id = ?", tmdbID).Updates(map[string]interface{}{
 			"name": parsed.Name, "overview": parsed.Overview,
 			"popularity": parsed.Popularity, "vote_average": parsed.VoteAverage,
-			"poster_path": parsed.PosterPath, "tmdb_data": model.RawJSON(data), "last_synced_at": &now,
+			"poster_path": parsed.PosterPath, "tmdb_data": model.RawJSON(data), "last_synced_at": &now, "sync_tmdb_id": resolveSyncTmdbID(syncTmdbID, tmdbID),
 		})
 	}
 }
@@ -380,4 +438,30 @@ func normalizeSeasonDetailPayload(input map[string]interface{}, seasonNumber int
 		result["episodes"] = []interface{}{}
 	}
 	return result, nil
+}
+
+func resolveSyncTmdbID(syncTmdbID int, currentTmdbID int) int {
+	if syncTmdbID > 0 {
+		return syncTmdbID
+	}
+	if currentTmdbID > 0 {
+		return currentTmdbID
+	}
+	return 0
+}
+
+func rewriteTMDBID(raw json.RawMessage, tmdbID int) (json.RawMessage, error) {
+	if tmdbID <= 0 {
+		return raw, nil
+	}
+	payload := map[string]interface{}{}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, err
+	}
+	payload["id"] = tmdbID
+	normalized, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	return normalized, nil
 }
