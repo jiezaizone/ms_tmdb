@@ -533,6 +533,16 @@ watch(movieId, () => {
           <p v-if="detail.original_title !== detail.title" class="text-sm text-black/55">
             {{ detail.original_title }}
           </p>
+          <div class="mt-2 grid gap-1 text-xs text-black/60 sm:grid-cols-2">
+            <p>
+              修改后 TMDB ID：
+              <span class="font-medium text-black">{{ detail.id ?? movieId }}</span>
+            </p>
+            <p>
+              原始 TMDB ID：
+              <span class="font-medium text-black">{{ detail.sync_tmdb_id ?? detail.id ?? movieId }}</span>
+            </p>
+          </div>
 
           <div class="mt-3 flex flex-wrap gap-2">
             <span class="badge">⭐ {{ detail.vote_average?.toFixed(1) ?? "-" }}</span>

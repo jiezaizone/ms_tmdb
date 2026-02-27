@@ -55,28 +55,28 @@ func (s *ProxyService) ResolveTVSyncID(tmdbID int) int {
 func (s *ProxyService) GetMovieDetail(tmdbID int, opts *tmdbclient.RequestOption) (json.RawMessage, error) {
 	var movie model.Movie
 	err := s.DB.Where("tmdb_id = ?", tmdbID).First(&movie).Error
-
-	if err == nil {
-		if movie.IsModified || !isExpired(movie.LastSyncedAt, 24*time.Hour) {
-			return json.RawMessage(movie.TmdbData), nil
-		}
-	}
-
 	syncTmdbID := tmdbID
+
 	if err == nil {
 		syncTmdbID = resolveSyncTmdbID(movie.SyncTmdbID, movie.TmdbID)
+		if syncTmdbID == 0 {
+			syncTmdbID = tmdbID
+		}
+		if movie.IsModified || !isExpired(movie.LastSyncedAt, 24*time.Hour) {
+			return rewriteTMDBID(json.RawMessage(movie.TmdbData), tmdbID, syncTmdbID)
+		}
 	}
 
 	data, fetchErr := s.TmdbClient.GetMovie(syncTmdbID, opts)
 	if fetchErr != nil {
 		if err == nil {
 			logx.Infof("TMDB 不可用，返回本地缓存: movie/%d", tmdbID)
-			return json.RawMessage(movie.TmdbData), nil
+			return rewriteTMDBID(json.RawMessage(movie.TmdbData), tmdbID, syncTmdbID)
 		}
 		return nil, fetchErr
 	}
 
-	normalizedData, normalizeErr := rewriteTMDBID(data, tmdbID)
+	normalizedData, normalizeErr := rewriteTMDBID(data, tmdbID, syncTmdbID)
 	if normalizeErr != nil {
 		return nil, normalizeErr
 	}
@@ -89,27 +89,27 @@ func (s *ProxyService) GetMovieDetail(tmdbID int, opts *tmdbclient.RequestOption
 func (s *ProxyService) GetTvSeriesDetail(tmdbID int, opts *tmdbclient.RequestOption) (json.RawMessage, error) {
 	var tv model.TVSeries
 	err := s.DB.Where("tmdb_id = ?", tmdbID).First(&tv).Error
-
-	if err == nil {
-		if tv.IsModified || !isExpired(tv.LastSyncedAt, 24*time.Hour) {
-			return json.RawMessage(tv.TmdbData), nil
-		}
-	}
-
 	syncTmdbID := tmdbID
+
 	if err == nil {
 		syncTmdbID = resolveSyncTmdbID(tv.SyncTmdbID, tv.TmdbID)
+		if syncTmdbID == 0 {
+			syncTmdbID = tmdbID
+		}
+		if tv.IsModified || !isExpired(tv.LastSyncedAt, 24*time.Hour) {
+			return rewriteTMDBID(json.RawMessage(tv.TmdbData), tmdbID, syncTmdbID)
+		}
 	}
 
 	data, fetchErr := s.TmdbClient.GetTVSeries(syncTmdbID, opts)
 	if fetchErr != nil {
 		if err == nil {
-			return json.RawMessage(tv.TmdbData), nil
+			return rewriteTMDBID(json.RawMessage(tv.TmdbData), tmdbID, syncTmdbID)
 		}
 		return nil, fetchErr
 	}
 
-	normalizedData, normalizeErr := rewriteTMDBID(data, tmdbID)
+	normalizedData, normalizeErr := rewriteTMDBID(data, tmdbID, syncTmdbID)
 	if normalizeErr != nil {
 		return nil, normalizeErr
 	}
@@ -450,15 +450,18 @@ func resolveSyncTmdbID(syncTmdbID int, currentTmdbID int) int {
 	return 0
 }
 
-func rewriteTMDBID(raw json.RawMessage, tmdbID int) (json.RawMessage, error) {
-	if tmdbID <= 0 {
-		return raw, nil
-	}
+func rewriteTMDBID(raw json.RawMessage, tmdbID int, syncTmdbID int) (json.RawMessage, error) {
 	payload := map[string]interface{}{}
 	if err := json.Unmarshal(raw, &payload); err != nil {
 		return nil, err
 	}
-	payload["id"] = tmdbID
+	if tmdbID != 0 {
+		payload["id"] = tmdbID
+	}
+	if syncTmdbID == 0 {
+		syncTmdbID = tmdbID
+	}
+	payload["sync_tmdb_id"] = syncTmdbID
 	normalized, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
