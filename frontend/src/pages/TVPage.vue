@@ -138,6 +138,11 @@ const editForm = ref<TVEditForm>({
 });
 
 const tvId = computed(() => Number(route.params.id));
+const currentTmdbId = computed(() => Number(detail.value?.id ?? tvId.value ?? 0));
+const originalTmdbId = computed(() => Number(detail.value?.sync_tmdb_id ?? detail.value?.id ?? tvId.value ?? 0));
+const hasRewrittenTmdbId = computed(() => {
+  return originalTmdbId.value > 0 && currentTmdbId.value > 0 && originalTmdbId.value !== currentTmdbId.value;
+});
 const seasonOptions = computed<TVSeasonSummary[]>(() => normalizeSeasonList(detail.value?.seasons));
 const selectedSeasonEpisodes = computed<TVEpisodeItem[]>(() => selectedSeasonDetail.value?.episodes ?? []);
 const hasRemoteOnlyDiff = computed(() => (remoteDiffNotice.value?.remoteFields.length ?? 0) > 0);
@@ -849,13 +854,19 @@ watch(tvId, () => {
             {{ detail.original_name }}
           </p>
           <div class="mt-2 grid gap-1 text-xs text-black/60 sm:grid-cols-2">
-            <p>
-              修改后 TMDB ID：
-              <span class="font-medium text-black">{{ detail.id ?? tvId }}</span>
-            </p>
-            <p>
-              原始 TMDB ID：
-              <span class="font-medium text-black">{{ detail.sync_tmdb_id ?? detail.id ?? tvId }}</span>
+            <template v-if="hasRewrittenTmdbId">
+              <p>
+                修改后 TMDB ID：
+                <span class="font-medium text-black">{{ currentTmdbId }}</span>
+              </p>
+              <p>
+                原始 TMDB ID：
+                <span class="font-medium text-black">{{ originalTmdbId }}</span>
+              </p>
+            </template>
+            <p v-else>
+              TMDB ID：
+              <span class="font-medium text-black">{{ currentTmdbId }}</span>
             </p>
           </div>
 

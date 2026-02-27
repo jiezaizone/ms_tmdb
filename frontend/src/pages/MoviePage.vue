@@ -95,6 +95,11 @@ const editForm = ref<MovieEditForm>({
 });
 
 const movieId = computed(() => Number(route.params.id));
+const currentTmdbId = computed(() => Number(detail.value?.id ?? movieId.value ?? 0));
+const originalTmdbId = computed(() => Number(detail.value?.sync_tmdb_id ?? detail.value?.id ?? movieId.value ?? 0));
+const hasRewrittenTmdbId = computed(() => {
+  return originalTmdbId.value > 0 && currentTmdbId.value > 0 && originalTmdbId.value !== currentTmdbId.value;
+});
 const hasRemoteOnlyDiff = computed(() => (remoteDiffNotice.value?.remoteFields.length ?? 0) > 0);
 const hasLocalOverrideDiff = computed(() => (remoteDiffNotice.value?.localOverrideFields.length ?? 0) > 0);
 const shouldShowSyncPanel = computed(() => {
@@ -546,13 +551,19 @@ watch(movieId, () => {
             {{ detail.original_title }}
           </p>
           <div class="mt-2 grid gap-1 text-xs text-black/60 sm:grid-cols-2">
-            <p>
-              修改后 TMDB ID：
-              <span class="font-medium text-black">{{ detail.id ?? movieId }}</span>
-            </p>
-            <p>
-              原始 TMDB ID：
-              <span class="font-medium text-black">{{ detail.sync_tmdb_id ?? detail.id ?? movieId }}</span>
+            <template v-if="hasRewrittenTmdbId">
+              <p>
+                修改后 TMDB ID：
+                <span class="font-medium text-black">{{ currentTmdbId }}</span>
+              </p>
+              <p>
+                原始 TMDB ID：
+                <span class="font-medium text-black">{{ originalTmdbId }}</span>
+              </p>
+            </template>
+            <p v-else>
+              TMDB ID：
+              <span class="font-medium text-black">{{ currentTmdbId }}</span>
             </p>
           </div>
 
