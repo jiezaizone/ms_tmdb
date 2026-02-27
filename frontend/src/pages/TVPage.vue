@@ -96,6 +96,7 @@ const tmdbRiskModalVisible = ref(false);
 const tmdbRiskCurrentId = ref<number | null>(null);
 const tmdbRiskNextId = ref<number | null>(null);
 let tmdbRiskConfirmResolver: ((confirmed: boolean) => void) | null = null;
+const deleteConfirmModalVisible = ref(false);
 const selectedSeasonNumber = ref<number | null>(null);
 const selectedSeasonDetail = ref<TVSeasonDetail | null>(null);
 const selectedSeasonPayload = ref<Record<string, unknown> | null>(null);
@@ -502,13 +503,24 @@ async function deleteCurrentTV() {
     deleteError.value = "无效剧集 ID";
     return;
   }
-  const name = detail.value?.name || detail.value?.original_name || `ID ${tvId.value}`;
-  const confirmed = window.confirm(`确认删除「${name}」的本地数据吗？\n删除后不可恢复。`);
-  if (!confirmed) return;
+  deleteConfirmModalVisible.value = true;
+}
+
+function closeDeleteConfirmModal() {
+  deleteConfirmModalVisible.value = false;
+}
+
+async function confirmDeleteCurrentTV() {
+  if (!tvId.value) {
+    deleteError.value = "无效剧集 ID";
+    deleteConfirmModalVisible.value = false;
+    return;
+  }
 
   deleting.value = true;
   deleteError.value = "";
   try {
+    deleteConfirmModalVisible.value = false;
     await deleteTV(tvId.value);
     await router.push({
       path: "/library",
@@ -1359,6 +1371,29 @@ watch(tvId, () => {
       <div class="mt-4 flex items-center justify-end gap-2">
         <button class="btn-soft" @click="closeTmdbRiskModal(false)">取消</button>
         <button class="btn-primary" @click="closeTmdbRiskModal(true)">确认继续</button>
+      </div>
+    </section>
+  </div>
+
+  <div
+    v-if="deleteConfirmModalVisible"
+    class="fixed inset-0 z-[1300] flex items-center justify-center bg-black/45 p-4"
+    @click.self="closeDeleteConfirmModal"
+  >
+    <section class="panel-glass w-full max-w-md rounded-2xl p-5">
+      <h3 class="text-base font-semibold text-red-700">删除本地数据确认</h3>
+      <p class="mt-2 text-sm text-black/75">
+        确认删除剧集
+        <span class="font-medium">{{ detail?.name || detail?.original_name || `ID ${tvId}` }}</span>
+        的本地数据吗？
+      </p>
+      <p class="mt-2 text-xs text-red-700">删除后不可恢复。</p>
+
+      <div class="mt-4 flex items-center justify-end gap-2">
+        <button class="btn-soft" :disabled="deleting" @click="closeDeleteConfirmModal">取消</button>
+        <button class="btn-danger-soft" :disabled="deleting" @click="confirmDeleteCurrentTV">
+          {{ deleting ? "删除中..." : "确认删除" }}
+        </button>
       </div>
     </section>
   </div>
