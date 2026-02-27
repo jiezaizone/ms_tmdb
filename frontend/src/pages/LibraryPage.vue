@@ -541,7 +541,7 @@ onMounted(loadData);
       <input
         v-model="keywordInput"
         class="w-full field-control text-sm"
-        placeholder="输入片名/剧名关键词"
+        placeholder="输入 TMDB ID 或片名/剧名关键词"
         @keyup.enter="applySearch"
       />
       <GlassSelect v-model="searchMode" :options="searchModeOptions" />

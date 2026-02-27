@@ -33,6 +33,7 @@ func (l *ListTvSeriesLogic) ListTvSeries(req *types.LibraryListReq) (*types.TvSe
 		l.svcCtx.DB.Model(&model.TVSeries{}),
 		req.Keyword,
 		searchMode,
+		"tmdb_id",
 		"name",
 		"original_name",
 	)

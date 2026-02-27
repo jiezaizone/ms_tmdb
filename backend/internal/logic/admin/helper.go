@@ -57,11 +57,23 @@ func applyKeywordFilter(db *gorm.DB, keyword, mode string, columns ...string) *g
 		pattern = kw + "%"
 	}
 
+	kwInt, kwIntErr := strconv.Atoi(kw)
+
 	parts := make([]string, 0, len(columns))
 	args := make([]interface{}, 0, len(columns))
 	for _, col := range columns {
+		if col == "tmdb_id" {
+			if kwIntErr == nil {
+				parts = append(parts, "tmdb_id = ?")
+				args = append(args, kwInt)
+			}
+			continue
+		}
 		parts = append(parts, fmt.Sprintf("%s ILIKE ?", col))
 		args = append(args, pattern)
+	}
+	if len(parts) == 0 {
+		return db
 	}
 
 	return db.Where(strings.Join(parts, " OR "), args...)

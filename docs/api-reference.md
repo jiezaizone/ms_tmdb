@@ -110,6 +110,8 @@
 - `GET /api/admin/movies?page=1&page_size=20&keyword=&search_mode=contains`
 - `GET /api/admin/tv-series?page=1&page_size=20&keyword=&search_mode=contains`
 
+说明：当 `keyword` 为纯数字时，列表接口会额外按 `tmdb_id` 精确匹配。
+
 ### 2.5 代理设置
 
 - `GET /api/admin/proxy`

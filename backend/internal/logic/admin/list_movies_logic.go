@@ -33,6 +33,7 @@ func (l *ListMoviesLogic) ListMovies(req *types.LibraryListReq) (*types.MovieLis
 		l.svcCtx.DB.Model(&model.Movie{}),
 		req.Keyword,
 		searchMode,
+		"tmdb_id",
 		"title",
 		"original_title",
 	)
