@@ -10,6 +10,7 @@ import {
   runAutoSyncNow,
   updateAutoSyncSettings,
   updateProxySettings,
+  type AdminAutoSyncLogDetailParams,
   type AdminAutoSyncLogDetailResp,
   type AdminAutoSyncLogItem,
   type AdminAutoSyncMode,
@@ -48,6 +49,11 @@ const detailModalVisible = ref(false);
 const detailLoading = ref(false);
 const detailError = ref("");
 const activeLogDetail = ref<AdminAutoSyncLogDetailResp | null>(null);
+const activeLogId = ref<number | null>(null);
+const detailSyncedPage = ref(1);
+const detailSyncedPageSize = ref(10);
+const detailFailedPage = ref(1);
+const detailFailedPageSize = ref(10);
 
 const modeOptions: Array<{ label: string; value: AdminAutoSyncMode; hint: string }> = [
   { label: "仅更新未在本地修改的字段", value: "update_unmodified", hint: "保留本地改动，只更新 TMDB 远端变化字段" },
@@ -174,6 +180,20 @@ function logsTotalPages() {
   return Math.max(1, Math.ceil(logsTotal.value / logsPageSize.value));
 }
 
+function detailTotalPages(total: number, pageSize: number) {
+  const safeTotal = Math.max(0, Number(total) || 0);
+  const safePageSize = normalizeNumber(Number(pageSize) || 10, 1, 100);
+  return Math.max(1, Math.ceil(safeTotal / safePageSize));
+}
+
+function detailSyncedTotalPages() {
+  return detailTotalPages(activeLogDetail.value?.synced ?? 0, detailSyncedPageSize.value);
+}
+
+function detailFailedTotalPages() {
+  return detailTotalPages(activeLogDetail.value?.failed ?? 0, detailFailedPageSize.value);
+}
+
 async function loadAutoSyncLogs(page = logsPage.value) {
   logsLoading.value = true;
   logsError.value = "";
@@ -240,15 +260,27 @@ async function goToLogsPage(page: number) {
   await loadAutoSyncLogs(target);
 }
 
-async function openLogDetail(item: AdminAutoSyncLogItem) {
-  detailModalVisible.value = true;
+async function loadLogDetail(id: number, params: AdminAutoSyncLogDetailParams = {}, reset = false) {
   detailLoading.value = true;
   detailError.value = "";
-  activeLogDetail.value = null;
+  activeLogId.value = id;
+  if (reset) {
+    activeLogDetail.value = null;
+  }
 
   try {
-    const resp = await getAutoSyncLogDetail(item.id);
-    activeLogDetail.value = resp.data;
+    const resp = await getAutoSyncLogDetail(id, {
+      synced_page: params.synced_page ?? detailSyncedPage.value,
+      synced_page_size: params.synced_page_size ?? detailSyncedPageSize.value,
+      failed_page: params.failed_page ?? detailFailedPage.value,
+      failed_page_size: params.failed_page_size ?? detailFailedPageSize.value,
+    });
+    const data = resp.data;
+    activeLogDetail.value = data;
+    detailSyncedPageSize.value = normalizeNumber(Number(data.synced_page_size) || detailSyncedPageSize.value, 1, 100);
+    detailFailedPageSize.value = normalizeNumber(Number(data.failed_page_size) || detailFailedPageSize.value, 1, 100);
+    detailSyncedPage.value = normalizeNumber(Number(data.synced_page) || 1, 1, detailTotalPages(data.synced, detailSyncedPageSize.value));
+    detailFailedPage.value = normalizeNumber(Number(data.failed_page) || 1, 1, detailTotalPages(data.failed, detailFailedPageSize.value));
   } catch (err: any) {
     detailError.value = err.message ?? "读取日志明细失败";
   } finally {
@@ -256,11 +288,52 @@ async function openLogDetail(item: AdminAutoSyncLogItem) {
   }
 }
 
+async function openLogDetail(item: AdminAutoSyncLogItem) {
+  detailModalVisible.value = true;
+  detailSyncedPage.value = 1;
+  detailFailedPage.value = 1;
+  await loadLogDetail(
+    item.id,
+    {
+      synced_page: 1,
+      synced_page_size: detailSyncedPageSize.value,
+      failed_page: 1,
+      failed_page_size: detailFailedPageSize.value,
+    },
+    true,
+  );
+}
+
+async function goToDetailSyncedPage(page: number) {
+  if (!activeLogId.value) {
+    return;
+  }
+  const target = normalizeNumber(page, 1, detailSyncedTotalPages());
+  await loadLogDetail(activeLogId.value, {
+    synced_page: target,
+    failed_page: detailFailedPage.value,
+  });
+}
+
+async function goToDetailFailedPage(page: number) {
+  if (!activeLogId.value) {
+    return;
+  }
+  const target = normalizeNumber(page, 1, detailFailedTotalPages());
+  await loadLogDetail(activeLogId.value, {
+    synced_page: detailSyncedPage.value,
+    failed_page: target,
+  });
+}
+
 function closeLogDetail() {
   detailModalVisible.value = false;
   detailLoading.value = false;
   detailError.value = "";
   activeLogDetail.value = null;
+  activeLogId.value = null;
+  detailSyncedPage.value = 1;
+  detailFailedPage.value = 1;
 }
 
 async function loadSettings() {
@@ -619,10 +692,11 @@ onMounted(reloadAll);
         </div>
 
         <div class="max-h-[calc(90vh-60px)] overflow-y-auto px-5 py-4">
-          <p v-if="detailLoading" class="text-sm text-black/60">明细加载中...</p>
-          <p v-else-if="detailError" class="text-sm text-red-600">{{ detailError }}</p>
+          <p v-if="detailLoading && !activeLogDetail" class="text-sm text-black/60">明细加载中...</p>
+          <p v-if="detailError" class="mb-3 text-sm text-red-600">{{ detailError }}</p>
 
-          <template v-else-if="activeLogDetail">
+          <template v-if="activeLogDetail">
+            <p v-if="detailLoading" class="mb-3 text-xs text-black/50">分页加载中...</p>
             <div class="grid gap-3 text-sm md:grid-cols-2">
               <p><span class="text-black/55">触发时间：</span>{{ formatDateTime(activeLogDetail.triggered_at) }}</p>
               <p><span class="text-black/55">Cron：</span>{{ activeLogDetail.cron_expr || "-" }}</p>
@@ -635,7 +709,7 @@ onMounted(reloadAll);
             </div>
 
             <div class="mt-4">
-              <h5 class="text-sm font-semibold text-green-700">同步成功项（{{ activeLogDetail.synced_list.length }}）</h5>
+              <h5 class="text-sm font-semibold text-green-700">同步成功项（{{ activeLogDetail.synced }}）</h5>
               <div class="table-shell mt-2">
                 <table class="min-w-full text-sm">
                   <thead class="table-head text-left text-black/70">
@@ -673,10 +747,29 @@ onMounted(reloadAll);
                   </tbody>
                 </table>
               </div>
+              <div class="mt-3 flex items-center justify-between text-xs text-black/65">
+                <p>共 {{ activeLogDetail.synced }} 条，当前第 {{ detailSyncedPage }} / {{ detailSyncedTotalPages() }} 页</p>
+                <div class="flex items-center gap-2">
+                  <button
+                    class="btn-soft px-3 py-1.5 disabled:opacity-60"
+                    :disabled="detailLoading || detailSyncedPage <= 1"
+                    @click="goToDetailSyncedPage(detailSyncedPage - 1)"
+                  >
+                    上一页
+                  </button>
+                  <button
+                    class="btn-soft px-3 py-1.5 disabled:opacity-60"
+                    :disabled="detailLoading || detailSyncedPage >= detailSyncedTotalPages()"
+                    @click="goToDetailSyncedPage(detailSyncedPage + 1)"
+                  >
+                    下一页
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div class="mt-4">
-              <h5 class="text-sm font-semibold text-red-700">同步失败项（{{ activeLogDetail.failed_list.length }}）</h5>
+              <h5 class="text-sm font-semibold text-red-700">同步失败项（{{ activeLogDetail.failed }}）</h5>
               <div class="table-shell mt-2">
                 <table class="min-w-full text-sm">
                   <thead class="table-head text-left text-black/70">
@@ -703,6 +796,25 @@ onMounted(reloadAll);
                     </tr>
                   </tbody>
                 </table>
+              </div>
+              <div class="mt-3 flex items-center justify-between text-xs text-black/65">
+                <p>共 {{ activeLogDetail.failed }} 条，当前第 {{ detailFailedPage }} / {{ detailFailedTotalPages() }} 页</p>
+                <div class="flex items-center gap-2">
+                  <button
+                    class="btn-soft px-3 py-1.5 disabled:opacity-60"
+                    :disabled="detailLoading || detailFailedPage <= 1"
+                    @click="goToDetailFailedPage(detailFailedPage - 1)"
+                  >
+                    上一页
+                  </button>
+                  <button
+                    class="btn-soft px-3 py-1.5 disabled:opacity-60"
+                    :disabled="detailLoading || detailFailedPage >= detailFailedTotalPages()"
+                    @click="goToDetailFailedPage(detailFailedPage + 1)"
+                  >
+                    下一页
+                  </button>
+                </div>
               </div>
             </div>
           </template>

@@ -106,8 +106,19 @@ export type AdminAutoSyncLogDetailResp = {
   started_at: string;
   finished_at: string;
   created_at: string;
+  synced_page: number;
+  synced_page_size: number;
   synced_list: AdminAutoSyncLogDetailEntry[];
+  failed_page: number;
+  failed_page_size: number;
   failed_list: AdminAutoSyncLogDetailEntry[];
+};
+
+export type AdminAutoSyncLogDetailParams = {
+  synced_page?: number;
+  synced_page_size?: number;
+  failed_page?: number;
+  failed_page_size?: number;
 };
 
 export type AdminAutoSyncLogListResp = {
@@ -326,8 +337,8 @@ export function getAutoSyncLogs(params: AdminAutoSyncLogListParams = {}) {
   return http.get<AdminAutoSyncLogListResp>("/api/admin/auto-sync/logs", { params });
 }
 
-export function getAutoSyncLogDetail(id: number) {
-  return http.get<AdminAutoSyncLogDetailResp>(`/api/admin/auto-sync/logs/${id}`);
+export function getAutoSyncLogDetail(id: number, params: AdminAutoSyncLogDetailParams = {}) {
+  return http.get<AdminAutoSyncLogDetailResp>(`/api/admin/auto-sync/logs/${id}`, { params });
 }
 
 export function clearAutoSyncLogs() {

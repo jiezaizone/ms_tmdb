@@ -102,7 +102,11 @@ type AdminAutoSyncLogItem struct {
 }
 
 type AdminAutoSyncLogDetailReq struct {
-	Id int `path:"id"`
+	Id             int `path:"id"`
+	SyncedPage     int `form:"synced_page,optional,default=1"`
+	SyncedPageSize int `form:"synced_page_size,optional,default=10"`
+	FailedPage     int `form:"failed_page,optional,default=1"`
+	FailedPageSize int `form:"failed_page_size,optional,default=10"`
 }
 
 type AdminAutoSyncLogDetailEntry struct {
@@ -125,22 +129,26 @@ type AdminAutoSyncLogFieldChange struct {
 }
 
 type AdminAutoSyncLogDetailResp struct {
-	Id          int64                         `json:"id"`
-	TriggeredAt string                        `json:"triggered_at"`
-	CronExpr    string                        `json:"cron_expr"`
-	Mode        string                        `json:"mode"`
-	BatchSize   int                           `json:"batch_size"`
-	Status      string                        `json:"status"`
-	Checked     int                           `json:"checked"`
-	Synced      int                           `json:"synced"`
-	Failed      int                           `json:"failed"`
-	DurationMs  int64                         `json:"duration_ms"`
-	Message     string                        `json:"message"`
-	StartedAt   string                        `json:"started_at"`
-	FinishedAt  string                        `json:"finished_at"`
-	CreatedAt   string                        `json:"created_at"`
-	SyncedList  []AdminAutoSyncLogDetailEntry `json:"synced_list"`
-	FailedList  []AdminAutoSyncLogDetailEntry `json:"failed_list"`
+	Id             int64                         `json:"id"`
+	TriggeredAt    string                        `json:"triggered_at"`
+	CronExpr       string                        `json:"cron_expr"`
+	Mode           string                        `json:"mode"`
+	BatchSize      int                           `json:"batch_size"`
+	Status         string                        `json:"status"`
+	Checked        int                           `json:"checked"`
+	Synced         int                           `json:"synced"`
+	Failed         int                           `json:"failed"`
+	DurationMs     int64                         `json:"duration_ms"`
+	Message        string                        `json:"message"`
+	StartedAt      string                        `json:"started_at"`
+	FinishedAt     string                        `json:"finished_at"`
+	CreatedAt      string                        `json:"created_at"`
+	SyncedPage     int                           `json:"synced_page"`
+	SyncedPageSize int                           `json:"synced_page_size"`
+	SyncedList     []AdminAutoSyncLogDetailEntry `json:"synced_list"`
+	FailedPage     int                           `json:"failed_page"`
+	FailedPageSize int                           `json:"failed_page_size"`
+	FailedList     []AdminAutoSyncLogDetailEntry `json:"failed_list"`
 }
 
 type AdminAutoSyncLogListResp struct {

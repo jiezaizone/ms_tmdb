@@ -47,54 +47,87 @@ func (l *GetAutoSyncLogDetailLogic) GetAutoSyncLogDetail(req *types.AdminAutoSyn
 		}
 	}
 
-	syncedList := make([]types.AdminAutoSyncLogDetailEntry, 0, len(detail.Synced))
-	for _, item := range detail.Synced {
-		syncedList = append(syncedList, types.AdminAutoSyncLogDetailEntry{
-			MediaType:         item.MediaType,
-			TmdbId:            item.TmdbID,
-			Name:              item.Name,
-			Message:           item.Message,
-			RemoteDiffFields:  cloneStringSlice(item.RemoteDiffFields),
-			FieldChanges:      convertFieldChanges(item.FieldChanges),
-			ChangedFields:     cloneStringSlice(item.ChangedFields),
-			OverwrittenFields: cloneStringSlice(item.OverwrittenFields),
-			KeptLocalFields:   cloneStringSlice(item.KeptLocalFields),
-		})
-	}
+	syncedEntries := convertDetailEntries(detail.Synced)
+	syncedPage, syncedPageSize, syncedList := paginateDetailEntries(
+		syncedEntries,
+		req.SyncedPage,
+		req.SyncedPageSize,
+	)
 
-	failedList := make([]types.AdminAutoSyncLogDetailEntry, 0, len(detail.Failed))
-	for _, item := range detail.Failed {
-		failedList = append(failedList, types.AdminAutoSyncLogDetailEntry{
-			MediaType:         item.MediaType,
-			TmdbId:            item.TmdbID,
-			Name:              item.Name,
-			Message:           item.Message,
-			RemoteDiffFields:  cloneStringSlice(item.RemoteDiffFields),
-			FieldChanges:      convertFieldChanges(item.FieldChanges),
-			ChangedFields:     cloneStringSlice(item.ChangedFields),
-			OverwrittenFields: cloneStringSlice(item.OverwrittenFields),
-			KeptLocalFields:   cloneStringSlice(item.KeptLocalFields),
-		})
-	}
+	failedEntries := convertDetailEntries(detail.Failed)
+	failedPage, failedPageSize, failedList := paginateDetailEntries(
+		failedEntries,
+		req.FailedPage,
+		req.FailedPageSize,
+	)
 
 	return &types.AdminAutoSyncLogDetailResp{
-		Id:          int64(record.ID),
-		TriggeredAt: formatLogTime(record.TriggeredAt),
-		CronExpr:    record.CronExpr,
-		Mode:        record.Mode,
-		BatchSize:   record.BatchSize,
-		Status:      record.Status,
-		Checked:     record.Checked,
-		Synced:      record.Synced,
-		Failed:      record.Failed,
-		DurationMs:  record.DurationMs,
-		Message:     record.Message,
-		StartedAt:   formatLogTime(record.StartedAt),
-		FinishedAt:  formatLogTime(record.FinishedAt),
-		CreatedAt:   formatLogTime(record.CreatedAt),
-		SyncedList:  syncedList,
-		FailedList:  failedList,
+		Id:             int64(record.ID),
+		TriggeredAt:    formatLogTime(record.TriggeredAt),
+		CronExpr:       record.CronExpr,
+		Mode:           record.Mode,
+		BatchSize:      record.BatchSize,
+		Status:         record.Status,
+		Checked:        record.Checked,
+		Synced:         record.Synced,
+		Failed:         record.Failed,
+		DurationMs:     record.DurationMs,
+		Message:        record.Message,
+		StartedAt:      formatLogTime(record.StartedAt),
+		FinishedAt:     formatLogTime(record.FinishedAt),
+		CreatedAt:      formatLogTime(record.CreatedAt),
+		SyncedPage:     syncedPage,
+		SyncedPageSize: syncedPageSize,
+		SyncedList:     syncedList,
+		FailedPage:     failedPage,
+		FailedPageSize: failedPageSize,
+		FailedList:     failedList,
 	}, nil
+}
+
+func convertDetailEntries(values []autoSyncExecutionItem) []types.AdminAutoSyncLogDetailEntry {
+	if len(values) == 0 {
+		return []types.AdminAutoSyncLogDetailEntry{}
+	}
+
+	result := make([]types.AdminAutoSyncLogDetailEntry, 0, len(values))
+	for _, item := range values {
+		result = append(result, types.AdminAutoSyncLogDetailEntry{
+			MediaType:         item.MediaType,
+			TmdbId:            item.TmdbID,
+			Name:              item.Name,
+			Message:           item.Message,
+			RemoteDiffFields:  cloneStringSlice(item.RemoteDiffFields),
+			FieldChanges:      convertFieldChanges(item.FieldChanges),
+			ChangedFields:     cloneStringSlice(item.ChangedFields),
+			OverwrittenFields: cloneStringSlice(item.OverwrittenFields),
+			KeptLocalFields:   cloneStringSlice(item.KeptLocalFields),
+		})
+	}
+	return result
+}
+
+func paginateDetailEntries(items []types.AdminAutoSyncLogDetailEntry, page, pageSize int) (int, int, []types.AdminAutoSyncLogDetailEntry) {
+	page, pageSize = normalizePage(page, pageSize)
+	total := len(items)
+	if total == 0 {
+		return 1, pageSize, []types.AdminAutoSyncLogDetailEntry{}
+	}
+
+	totalPages := (total + pageSize - 1) / pageSize
+	if page > totalPages {
+		page = totalPages
+	}
+
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	if end > total {
+		end = total
+	}
+
+	result := make([]types.AdminAutoSyncLogDetailEntry, end-start)
+	copy(result, items[start:end])
+	return page, pageSize, result
 }
 
 func cloneStringSlice(values []string) []string {
