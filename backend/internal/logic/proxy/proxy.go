@@ -309,11 +309,11 @@ func (s *ProxyService) upsertMovie(tmdbID int, syncTmdbID int, data json.RawMess
 			Tagline: parsed.Tagline, Homepage: parsed.Homepage, ImdbID: parsed.ImdbID,
 			TmdbData: model.RawJSON(data), LastSyncedAt: &now,
 		}).Error; err != nil {
-			return err
+			if !isUniqueViolation(err) {
+				return err
+			}
 		}
-		return nil
-	}
-	if result.Error != nil {
+	} else if result.Error != nil {
 		return result.Error
 	}
 
@@ -355,11 +355,11 @@ func (s *ProxyService) upsertTVSeries(tmdbID int, syncTmdbID int, data json.RawM
 			PosterPath: parsed.PosterPath, Status: parsed.Status,
 			TmdbData: model.RawJSON(data), LastSyncedAt: &now,
 		}).Error; err != nil {
-			return err
+			if !isUniqueViolation(err) {
+				return err
+			}
 		}
-		return nil
-	}
-	if result.Error != nil {
+	} else if result.Error != nil {
 		return result.Error
 	}
 
@@ -394,11 +394,11 @@ func (s *ProxyService) upsertPerson(tmdbID int, data json.RawMessage) error {
 			Popularity: parsed.Popularity, ProfilePath: parsed.ProfilePath,
 			TmdbData: model.RawJSON(data), LastSyncedAt: &now,
 		}).Error; err != nil {
-			return err
+			if !isUniqueViolation(err) {
+				return err
+			}
 		}
-		return nil
-	}
-	if result.Error != nil {
+	} else if result.Error != nil {
 		return result.Error
 	}
 
@@ -740,6 +740,14 @@ func cloneRequestOption(opts *tmdbclient.RequestOption) *tmdbclient.RequestOptio
 		cloned.ExtraParams = extra
 	}
 	return &cloned
+}
+
+func isUniqueViolation(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate key value violates unique constraint") || strings.Contains(msg, "sqlstate 23505")
 }
 
 func isExpired(syncedAt *time.Time, ttl time.Duration) bool {
